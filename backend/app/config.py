@@ -7,6 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # OpenAPI docs
     OPENAPI_URL: str = "/openapi.json"
+    OPENAPI_OUTPUT_FILE: str = "../frontend/openapi.json"
 
     # Database - Sensible defaults for local development
     DATABASE_URL: str = (

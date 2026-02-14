@@ -1,13 +1,9 @@
 import json
 from pathlib import Path
 from app.main import app
-import os
+from app.config import settings
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
-OUTPUT_FILE = os.getenv("OPENAPI_OUTPUT_FILE")
+OUTPUT_FILE = settings.OPENAPI_OUTPUT_FILE
 
 
 def generate_openapi_schema(output_file):
