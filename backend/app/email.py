@@ -26,7 +26,7 @@ def get_email_config():
 async def send_reset_password_email(user: User, token: str):
     conf = get_email_config()
     email = user.email
-    base_url = f"{settings.FRONTEND_URL}/password-recovery/confirm?"
+    base_url = f"{settings.FRONTEND_URL}/auth/reset-password?"
     params = {"token": token}
     encoded_params = urllib.parse.urlencode(params)
     link = f"{base_url}{encoded_params}"

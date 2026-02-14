@@ -21,9 +21,11 @@ frontend/
 ├── app/                     # Next.js App Router pages
 │   ├── layout.tsx           # Root layout
 │   ├── page.tsx             # Home page
-│   ├── login/
-│   ├── register/
-│   ├── password-recovery/
+│   ├── auth/                # Authentication pages (grouped)
+│   │   ├── login/
+│   │   ├── register/
+│   │   ├── forgot-password/
+│   │   └── reset-password/
 │   ├── dashboard/
 │   ├── clientService.ts     # Client-side API service
 │   ├── globals.css          # Global styles
@@ -70,11 +72,39 @@ pnpm run generate-client    # Regenerate API client from OpenAPI schema
 - Keep UI components thin -- move logic into testable hooks or pure functions.
 - Import `render` from `@testing-library/react`.
 - Import `screen`, `fireEvent`, `waitFor` from `@testing-library/dom`.
-- Test files correspond to pages/components: `app/login/page.tsx` → `__tests__/loginPage.test.tsx`.
+
+### Test file structure
+
+Tests mirror the source layout, grouped by type:
+
+```
+__tests__/
+├── actions/           # Server action tests (.ts, no JSX)
+│   ├── login-action.test.ts
+│   ├── register-action.test.ts
+│   ├── apps-action.test.ts
+│   └── logout-action.test.ts
+├── pages/             # Page component tests (.tsx)
+│   ├── home.test.tsx
+│   ├── login.test.tsx
+│   └── create-app.test.tsx
+├── components/        # Reusable component tests (.tsx)
+│   ├── page-pagination.test.tsx
+│   └── delete-button.test.tsx
+└── lib/               # Utility / pure function tests (.ts)
+    ├── utils.test.ts
+    └── definitions.test.ts
+```
+
+Naming rules:
+- **Folder** tells you what type of thing is tested (action / page / component / lib)
+- **File name** matches the source file name (kebab-case)
+- **Extension** is `.ts` for non-JSX, `.tsx` for JSX
+- Drop redundant suffixes (no `Page`, `Action`) -- the folder already communicates that
 
 ## Architecture
 
-- **Pages** (`app/*/page.tsx`) -- thin UI shells. Compose components, handle routing.
+- **Pages** (`app/**/page.tsx`) -- thin UI shells. Compose components, handle routing. Auth pages live under `app/auth/`.
 - **Components** (`components/`) -- reusable UI. Keep business logic out.
 - **Actions** (`components/actions/`) -- server actions for form submissions and mutations.
 - **lib/** -- pure utility functions and configuration. Easy to test.

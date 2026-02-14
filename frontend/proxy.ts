@@ -6,7 +6,7 @@ export async function proxy(request: NextRequest) {
   const token = request.cookies.get("accessToken");
 
   if (!token) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
   const options = {
@@ -18,7 +18,7 @@ export async function proxy(request: NextRequest) {
   const { error } = await usersCurrentUser(options);
 
   if (error) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL("/auth/login", request.url));
   }
   return NextResponse.next();
 }

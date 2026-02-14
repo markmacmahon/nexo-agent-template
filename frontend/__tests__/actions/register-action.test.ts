@@ -6,7 +6,7 @@ jest.mock("next/navigation", () => ({
   redirect: jest.fn(),
 }));
 
-jest.mock("../app/clientService", () => ({
+jest.mock("../../app/clientService", () => ({
   registerRegister: jest.fn(),
 }));
 
@@ -75,6 +75,8 @@ describe("register action", () => {
   });
 
   it("should handle unexpected errors and return server error message", async () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+
     // Mock the registerRegister to throw an error
     const mockError = new Error("Network error");
     (registerRegister as jest.Mock).mockRejectedValue(mockError);
@@ -88,5 +90,8 @@ describe("register action", () => {
     expect(result).toEqual({
       server_error: "An unexpected error occurred. Please try again later.",
     });
+    expect(consoleSpy).toHaveBeenCalledWith("Registration error:", mockError);
+
+    consoleSpy.mockRestore();
   });
 });

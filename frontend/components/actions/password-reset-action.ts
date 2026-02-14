@@ -54,7 +54,7 @@ export async function passwordResetConfirm(
     if (error) {
       return { server_validation_error: getErrorMessage(error) };
     }
-    redirect(`/login`);
+    redirect(`/auth/login`);
   } catch (err) {
     console.error("Password reset confirmation error:", err);
     return {

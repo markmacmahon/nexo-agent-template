@@ -2,7 +2,7 @@ import { login } from "@/components/actions/login-action";
 import { authJwtLogin } from "@/app/clientService";
 import { cookies } from "next/headers";
 
-jest.mock("../app/clientService", () => ({
+jest.mock("../../app/clientService", () => ({
   authJwtLogin: jest.fn(),
 }));
 
@@ -89,6 +89,8 @@ describe("login action", () => {
   });
 
   it("should handle unexpected errors and return server error message", async () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+
     // Mock the authJwtLogin to throw an error
     const mockError = new Error("Network error");
     (authJwtLogin as jest.Mock).mockRejectedValue(mockError);
@@ -102,5 +104,8 @@ describe("login action", () => {
     expect(result).toEqual({
       server_error: "An unexpected error occurred. Please try again later.",
     });
+    expect(consoleSpy).toHaveBeenCalledWith("Login error:", mockError);
+
+    consoleSpy.mockRestore();
   });
 });

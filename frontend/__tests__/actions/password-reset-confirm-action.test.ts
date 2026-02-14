@@ -6,17 +6,17 @@ jest.mock("next/navigation", () => ({
   redirect: jest.fn(),
 }));
 
-jest.mock("../app/openapi-client/sdk.gen", () => ({
+jest.mock("../../app/openapi-client/sdk.gen", () => ({
   resetResetPassword: jest.fn(),
 }));
 
-jest.mock("../lib/clientConfig", () => ({
+jest.mock("../../lib/clientConfig", () => ({
   client: {
     setConfig: jest.fn(),
   },
 }));
 
-describe("passwordReset action", () => {
+describe("password reset confirm action", () => {
   afterEach(() => {
     jest.clearAllMocks();
   });
@@ -74,6 +74,8 @@ describe("passwordReset action", () => {
   });
 
   it("should handle unexpected errors and return server error message", async () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+
     // Mock the resetResetPassword to throw an error
     const mockError = new Error("Network error");
     (resetResetPassword as jest.Mock).mockRejectedValue(mockError);
@@ -88,5 +90,11 @@ describe("passwordReset action", () => {
     expect(result).toEqual({
       server_error: "An unexpected error occurred. Please try again later.",
     });
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "Password reset confirmation error:",
+      mockError,
+    );
+
+    consoleSpy.mockRestore();
   });
 });

@@ -38,5 +38,5 @@ export async function register(prevState: unknown, formData: FormData) {
       server_error: "An unexpected error occurred. Please try again later.",
     };
   }
-  redirect(`/login`);
+  redirect(`/auth/login`);
 }
