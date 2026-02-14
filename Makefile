@@ -1,8 +1,8 @@
 # Makefile
 
 # Variables
-BACKEND_DIR=fastapi_backend
-FRONTEND_DIR=nextjs-frontend
+BACKEND_DIR=backend
+FRONTEND_DIR=frontend
 DOCKER_COMPOSE=docker compose
 
 # Help
@@ -17,7 +17,10 @@ help:
 start-backend: ## Start the backend server with FastAPI and hot reload
 	cd $(BACKEND_DIR) && ./start.sh
 
-test-backend: ## Run backend tests using pytest
+test-backend: ## Run backend tests using pytest (requires test database)
+	@echo "Ensuring test database is running..."
+	@$(DOCKER_COMPOSE) up -d db_test
+	@sleep 2
 	cd $(BACKEND_DIR) && uv run pytest
 
 
@@ -29,6 +32,16 @@ start-frontend: ## Start the frontend server with pnpm and hot reload
 
 test-frontend: ## Run frontend tests using npm
 	cd $(FRONTEND_DIR) && pnpm run test
+
+
+# Pre-commit commands
+.PHONY: install-hooks precommit
+
+install-hooks: ## Install pre-commit hooks
+	cd $(BACKEND_DIR) && uv run pre-commit install
+
+precommit: ## Run pre-commit checks on all files (run before committing)
+	cd $(BACKEND_DIR) && uv run pre-commit run --all-files
 
 
 # Docker commands
