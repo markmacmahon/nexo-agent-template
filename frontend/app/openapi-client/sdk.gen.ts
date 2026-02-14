@@ -17,9 +17,33 @@ import type {
   CreateAppData,
   CreateAppErrors,
   CreateAppResponses,
+  CreateAssistantMessageData,
+  CreateAssistantMessageErrors,
+  CreateAssistantMessageResponses,
+  CreateMessageData,
+  CreateMessageErrors,
+  CreateMessageResponses,
+  CreateThreadData,
+  CreateThreadErrors,
+  CreateThreadResponses,
   DeleteAppData,
   DeleteAppErrors,
   DeleteAppResponses,
+  DeleteThreadData,
+  DeleteThreadErrors,
+  DeleteThreadResponses,
+  GetMessageData,
+  GetMessageErrors,
+  GetMessageResponses,
+  GetThreadData,
+  GetThreadErrors,
+  GetThreadResponses,
+  ListMessagesData,
+  ListMessagesErrors,
+  ListMessagesResponses,
+  ListThreadsData,
+  ListThreadsErrors,
+  ListThreadsResponses,
   ReadAppData,
   ReadAppErrors,
   ReadAppResponses,
@@ -32,6 +56,9 @@ import type {
   ResetResetPasswordData,
   ResetResetPasswordErrors,
   ResetResetPasswordResponses,
+  UpdateThreadData,
+  UpdateThreadErrors,
+  UpdateThreadResponses,
   UsersCurrentUserData,
   UsersCurrentUserErrors,
   UsersCurrentUserResponses,
@@ -354,5 +381,204 @@ export const deleteApp = <ThrowOnError extends boolean = false>(
     responseType: "json",
     security: [{ scheme: "bearer", type: "http" }],
     url: "/apps/{app_id}",
+    ...options,
+  });
+
+/**
+ * List Threads
+ *
+ * List threads for the specified app, ordered by updated_at desc.
+ */
+export const listThreads = <ThrowOnError extends boolean = false>(
+  options: Options<ListThreadsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    ListThreadsResponses,
+    ListThreadsErrors,
+    ThrowOnError
+  >({
+    responseType: "json",
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/apps/{app_id}/threads",
+    ...options,
+  });
+
+/**
+ * Create Thread
+ *
+ * Create a new thread for the specified app.
+ */
+export const createThread = <ThrowOnError extends boolean = false>(
+  options: Options<CreateThreadData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    CreateThreadResponses,
+    CreateThreadErrors,
+    ThrowOnError
+  >({
+    responseType: "json",
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/apps/{app_id}/threads",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * Delete Thread
+ *
+ * Delete a thread.
+ */
+export const deleteThread = <ThrowOnError extends boolean = false>(
+  options: Options<DeleteThreadData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    DeleteThreadResponses,
+    DeleteThreadErrors,
+    ThrowOnError
+  >({
+    responseType: "json",
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/threads/{thread_id}",
+    ...options,
+  });
+
+/**
+ * Get Thread
+ *
+ * Get a specific thread by ID.
+ */
+export const getThread = <ThrowOnError extends boolean = false>(
+  options: Options<GetThreadData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    GetThreadResponses,
+    GetThreadErrors,
+    ThrowOnError
+  >({
+    responseType: "json",
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/threads/{thread_id}",
+    ...options,
+  });
+
+/**
+ * Update Thread
+ *
+ * Update a thread.
+ */
+export const updateThread = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateThreadData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    UpdateThreadResponses,
+    UpdateThreadErrors,
+    ThrowOnError
+  >({
+    responseType: "json",
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/threads/{thread_id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * List Messages
+ *
+ * List messages for a thread with cursor-based pagination.
+ * Messages are ordered by seq ascending (oldest first).
+ */
+export const listMessages = <ThrowOnError extends boolean = false>(
+  options: Options<ListMessagesData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    ListMessagesResponses,
+    ListMessagesErrors,
+    ThrowOnError
+  >({
+    responseType: "json",
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/apps/{app_id}/threads/{thread_id}/messages",
+    ...options,
+  });
+
+/**
+ * Create Message
+ *
+ * Append a new user message to the thread.
+ *
+ * This endpoint:
+ * 1. Locks the thread row (SELECT FOR UPDATE)
+ * 2. Reads and increments next_seq atomically
+ * 3. Creates the message with role="user" and the allocated seq
+ * 4. Updates thread.updated_at
+ *
+ * This approach guarantees concurrency-safe seq allocation.
+ */
+export const createMessage = <ThrowOnError extends boolean = false>(
+  options: Options<CreateMessageData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    CreateMessageResponses,
+    CreateMessageErrors,
+    ThrowOnError
+  >({
+    responseType: "json",
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/apps/{app_id}/threads/{thread_id}/messages",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * Create Assistant Message
+ *
+ * Create an assistant message (for dashboard simulation).
+ *
+ * This allows the business owner to manually reply as the assistant
+ * through the dashboard UI.
+ */
+export const createAssistantMessage = <ThrowOnError extends boolean = false>(
+  options: Options<CreateAssistantMessageData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    CreateAssistantMessageResponses,
+    CreateAssistantMessageErrors,
+    ThrowOnError
+  >({
+    responseType: "json",
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/apps/{app_id}/threads/{thread_id}/messages/assistant",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * Get Message
+ *
+ * Get a specific message by ID.
+ */
+export const getMessage = <ThrowOnError extends boolean = false>(
+  options: Options<GetMessageData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    GetMessageResponses,
+    GetMessageErrors,
+    ThrowOnError
+  >({
+    responseType: "json",
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/messages/{message_id}",
     ...options,
   });

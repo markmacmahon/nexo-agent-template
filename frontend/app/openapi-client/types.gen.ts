@@ -123,6 +123,60 @@ export type HttpValidationError = {
 };
 
 /**
+ * MessageCreate
+ *
+ * Create message schema - role is always 'user' for public endpoint.
+ */
+export type MessageCreate = {
+  /**
+   * Content
+   */
+  content?: string | null;
+  /**
+   * Content Json
+   */
+  content_json?: {
+    [key: string]: unknown;
+  };
+};
+
+/**
+ * MessageRead
+ */
+export type MessageRead = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Thread Id
+   */
+  thread_id: string;
+  /**
+   * Seq
+   */
+  seq: number;
+  /**
+   * Role
+   */
+  role: "user" | "assistant" | "system" | "tool";
+  /**
+   * Content
+   */
+  content?: string | null;
+  /**
+   * Content Json
+   */
+  content_json: {
+    [key: string]: unknown;
+  };
+  /**
+   * Created At
+   */
+  created_at: string;
+};
+
+/**
  * Page[AppRead]
  */
 export type PageAppRead = {
@@ -146,6 +200,94 @@ export type PageAppRead = {
    * Pages
    */
   pages?: number | null;
+};
+
+/**
+ * Page[ThreadRead]
+ */
+export type PageThreadRead = {
+  /**
+   * Items
+   */
+  items: Array<ThreadRead>;
+  /**
+   * Total
+   */
+  total?: number | null;
+  /**
+   * Page
+   */
+  page: number | null;
+  /**
+   * Size
+   */
+  size: number | null;
+  /**
+   * Pages
+   */
+  pages?: number | null;
+};
+
+/**
+ * ThreadCreate
+ */
+export type ThreadCreate = {
+  /**
+   * Title
+   */
+  title?: string | null;
+  /**
+   * Customer Id
+   */
+  customer_id?: string | null;
+};
+
+/**
+ * ThreadRead
+ */
+export type ThreadRead = {
+  /**
+   * Title
+   */
+  title?: string | null;
+  /**
+   * Customer Id
+   */
+  customer_id?: string | null;
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * App Id
+   */
+  app_id: string;
+  /**
+   * Status
+   */
+  status: "active" | "archived" | "deleted";
+  /**
+   * Created At
+   */
+  created_at: string;
+  /**
+   * Updated At
+   */
+  updated_at: string;
+};
+
+/**
+ * ThreadUpdate
+ */
+export type ThreadUpdate = {
+  /**
+   * Title
+   */
+  title?: string | null;
+  /**
+   * Status
+   */
+  status?: "active" | "archived" | "deleted" | null;
 };
 
 /**
@@ -745,3 +887,330 @@ export type DeleteAppResponses = {
    */
   200: unknown;
 };
+
+export type ListThreadsData = {
+  body?: never;
+  path: {
+    /**
+     * App Id
+     */
+    app_id: string;
+  };
+  query?: {
+    /**
+     * Page
+     *
+     * Page number
+     */
+    page?: number;
+    /**
+     * Size
+     *
+     * Page size
+     */
+    size?: number;
+    /**
+     * Customer Id
+     *
+     * Filter by customer ID
+     */
+    customer_id?: string | null;
+    /**
+     * Status
+     *
+     * Filter by status
+     */
+    status?: string | null;
+  };
+  url: "/apps/{app_id}/threads";
+};
+
+export type ListThreadsErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ListThreadsError = ListThreadsErrors[keyof ListThreadsErrors];
+
+export type ListThreadsResponses = {
+  /**
+   * Successful Response
+   */
+  200: PageThreadRead;
+};
+
+export type ListThreadsResponse =
+  ListThreadsResponses[keyof ListThreadsResponses];
+
+export type CreateThreadData = {
+  body: ThreadCreate;
+  path: {
+    /**
+     * App Id
+     */
+    app_id: string;
+  };
+  query?: never;
+  url: "/apps/{app_id}/threads";
+};
+
+export type CreateThreadErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type CreateThreadError = CreateThreadErrors[keyof CreateThreadErrors];
+
+export type CreateThreadResponses = {
+  /**
+   * Successful Response
+   */
+  200: ThreadRead;
+};
+
+export type CreateThreadResponse =
+  CreateThreadResponses[keyof CreateThreadResponses];
+
+export type DeleteThreadData = {
+  body?: never;
+  path: {
+    /**
+     * Thread Id
+     */
+    thread_id: string;
+  };
+  query?: never;
+  url: "/threads/{thread_id}";
+};
+
+export type DeleteThreadErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type DeleteThreadError = DeleteThreadErrors[keyof DeleteThreadErrors];
+
+export type DeleteThreadResponses = {
+  /**
+   * Successful Response
+   */
+  200: unknown;
+};
+
+export type GetThreadData = {
+  body?: never;
+  path: {
+    /**
+     * Thread Id
+     */
+    thread_id: string;
+  };
+  query?: never;
+  url: "/threads/{thread_id}";
+};
+
+export type GetThreadErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetThreadError = GetThreadErrors[keyof GetThreadErrors];
+
+export type GetThreadResponses = {
+  /**
+   * Successful Response
+   */
+  200: ThreadRead;
+};
+
+export type GetThreadResponse = GetThreadResponses[keyof GetThreadResponses];
+
+export type UpdateThreadData = {
+  body: ThreadUpdate;
+  path: {
+    /**
+     * Thread Id
+     */
+    thread_id: string;
+  };
+  query?: never;
+  url: "/threads/{thread_id}";
+};
+
+export type UpdateThreadErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UpdateThreadError = UpdateThreadErrors[keyof UpdateThreadErrors];
+
+export type UpdateThreadResponses = {
+  /**
+   * Successful Response
+   */
+  200: ThreadRead;
+};
+
+export type UpdateThreadResponse =
+  UpdateThreadResponses[keyof UpdateThreadResponses];
+
+export type ListMessagesData = {
+  body?: never;
+  path: {
+    /**
+     * App Id
+     */
+    app_id: string;
+    /**
+     * Thread Id
+     */
+    thread_id: string;
+  };
+  query?: {
+    /**
+     * Before Seq
+     *
+     * Get messages before this sequence number (cursor pagination)
+     */
+    before_seq?: number | null;
+    /**
+     * Limit
+     *
+     * Maximum number of messages to return
+     */
+    limit?: number;
+  };
+  url: "/apps/{app_id}/threads/{thread_id}/messages";
+};
+
+export type ListMessagesErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ListMessagesError = ListMessagesErrors[keyof ListMessagesErrors];
+
+export type ListMessagesResponses = {
+  /**
+   * Response Messages-List Messages
+   *
+   * Successful Response
+   */
+  200: Array<MessageRead>;
+};
+
+export type ListMessagesResponse =
+  ListMessagesResponses[keyof ListMessagesResponses];
+
+export type CreateMessageData = {
+  body: MessageCreate;
+  path: {
+    /**
+     * App Id
+     */
+    app_id: string;
+    /**
+     * Thread Id
+     */
+    thread_id: string;
+  };
+  query?: never;
+  url: "/apps/{app_id}/threads/{thread_id}/messages";
+};
+
+export type CreateMessageErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type CreateMessageError = CreateMessageErrors[keyof CreateMessageErrors];
+
+export type CreateMessageResponses = {
+  /**
+   * Successful Response
+   */
+  200: MessageRead;
+};
+
+export type CreateMessageResponse =
+  CreateMessageResponses[keyof CreateMessageResponses];
+
+export type CreateAssistantMessageData = {
+  body: MessageCreate;
+  path: {
+    /**
+     * App Id
+     */
+    app_id: string;
+    /**
+     * Thread Id
+     */
+    thread_id: string;
+  };
+  query?: never;
+  url: "/apps/{app_id}/threads/{thread_id}/messages/assistant";
+};
+
+export type CreateAssistantMessageErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type CreateAssistantMessageError =
+  CreateAssistantMessageErrors[keyof CreateAssistantMessageErrors];
+
+export type CreateAssistantMessageResponses = {
+  /**
+   * Successful Response
+   */
+  200: MessageRead;
+};
+
+export type CreateAssistantMessageResponse =
+  CreateAssistantMessageResponses[keyof CreateAssistantMessageResponses];
+
+export type GetMessageData = {
+  body?: never;
+  path: {
+    /**
+     * Message Id
+     */
+    message_id: string;
+  };
+  query?: never;
+  url: "/messages/{message_id}";
+};
+
+export type GetMessageErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetMessageError = GetMessageErrors[keyof GetMessageErrors];
+
+export type GetMessageResponses = {
+  /**
+   * Successful Response
+   */
+  200: MessageRead;
+};
+
+export type GetMessageResponse = GetMessageResponses[keyof GetMessageResponses];

@@ -5,6 +5,8 @@ from .users import auth_backend, fastapi_users, AUTH_URL_PATH
 from fastapi.middleware.cors import CORSMiddleware
 from .utils import simple_generate_unique_route_id
 from app.routes.apps import router as apps_router
+from app.routes.threads import router as threads_router
+from app.routes.messages import router as messages_router
 from app.config import settings
 
 app = FastAPI(
@@ -50,4 +52,9 @@ app.include_router(
 
 # Include apps routes
 app.include_router(apps_router, prefix="/apps")
+
+# Include chat routes (threads and messages)
+app.include_router(threads_router)
+app.include_router(messages_router)
+
 add_pagination(app)
