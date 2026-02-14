@@ -44,47 +44,17 @@ precommit: ## Run pre-commit checks on all files (run before committing)
 	cd $(BACKEND_DIR) && uv run pre-commit run --all-files
 
 
-# Docker commands
-.PHONY: docker-backend-shell docker-frontend-shell docker-build docker-build-backend \
-        docker-build-frontend docker-start-backend docker-start-frontend docker-up-test-db \
-        docker-migrate-db docker-db-schema docker-test-backend docker-test-frontend
+# Docker commands (databases and mailhog only)
+.PHONY: docker-up-db docker-up-test-db docker-up-mailhog docker-down
 
+docker-up-db: ## Start the development database
+	$(DOCKER_COMPOSE) up -d db
 
-docker-backend-shell: ## Access the backend container shell
-	$(DOCKER_COMPOSE) run --rm backend sh
+docker-up-test-db: ## Start the test database
+	$(DOCKER_COMPOSE) up -d db_test
 
-docker-frontend-shell: ## Access the frontend container shell
-	$(DOCKER_COMPOSE) run --rm frontend sh
+docker-up-mailhog: ## Start mailhog email testing server
+	$(DOCKER_COMPOSE) up -d mailhog
 
-docker-build: ## Build all the services
-	$(DOCKER_COMPOSE) build --no-cache
-
-docker-build-backend: ## Build the backend container with no cache
-	$(DOCKER_COMPOSE) build backend --no-cache
-
-docker-build-frontend: ## Build the frontend container with no cache
-	$(DOCKER_COMPOSE) build frontend --no-cache
-
-docker-start-backend: ## Start the backend container
-	$(DOCKER_COMPOSE) up backend
-
-docker-start-frontend: ## Start the frontend container
-	$(DOCKER_COMPOSE) up frontend
-
-docker-up-test-db: ## Start the test database container
-	$(DOCKER_COMPOSE) up db_test
-
-docker-migrate-db: ## Run database migrations using Alembic
-	$(DOCKER_COMPOSE) run --rm backend alembic upgrade head
-
-docker-db-schema: ## Generate a new migration schema. Usage: make docker-db-schema migration_name="add users"
-	$(DOCKER_COMPOSE) run --rm backend alembic revision --autogenerate -m "$(migration_name)"
-
-docker-test-backend: ## Run tests for the backend
-	$(DOCKER_COMPOSE) run --rm backend pytest
-
-docker-test-frontend: ## Run tests for the frontend
-	$(DOCKER_COMPOSE) run --rm frontend pnpm run test
-
-docker-up-mailhog: ## Start mailhog server
-	$(DOCKER_COMPOSE) up mailhog
+docker-down: ## Stop all Docker services
+	$(DOCKER_COMPOSE) down

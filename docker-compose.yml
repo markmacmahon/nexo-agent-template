@@ -1,22 +1,4 @@
 services:
-  backend:
-    build:
-      context: backend
-    environment:
-      - OPENAPI_OUTPUT_FILE=./shared-data/openapi.json
-      - DATABASE_URL=postgresql+asyncpg://postgres:password@db:5432/agents_db
-      - TEST_DATABASE_URL=postgresql+asyncpg://postgres:password@db:5433/agents_test_db
-      - MAIL_SERVER=mailhog
-    ports:
-      - "8000:8000"
-    networks:
-      - my_network
-    volumes:
-      - ./backend:/app
-      - fastapi-venv:/app/.venv
-      - ./local-shared-data:/app/shared-data
-    depends_on:
-      - db
   db:
     image: postgres:17
     environment:
@@ -25,10 +7,9 @@ services:
       POSTGRES_DB: agents_db
     ports:
       - "5432:5432"
-    networks:
-      - my_network
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
   db_test:
     image: postgres:17
     environment:
@@ -37,38 +18,13 @@ services:
       POSTGRES_DB: agents_test_db
     ports:
       - "5433:5432"
-    networks:
-      - my_network
     restart: always
-  frontend:
-    build:
-      context: ./frontend
-    user: node
-    ports:
-      - "3000:3000"
-    networks:
-      - my_network
-    environment:
-      NODE_ENV: development
-      API_BASE_URL: http://backend:8000
-      OPENAPI_OUTPUT_FILE: ./shared-data/openapi.json
-    volumes:
-      - ./frontend:/app
-      - nextjs-node-modules:/app/node_modules
-      - ./local-shared-data:/app/shared-data
+
   mailhog:
     image: mailhog/mailhog
     ports:
       - "1025:1025" # SMTP server
       - "8025:8025" # Web UI
-    networks:
-      - my_network
 
 volumes:
   postgres_data:
-  nextjs-node-modules:
-  fastapi-venv:
-
-networks:
-  my_network:
-    driver: bridge
