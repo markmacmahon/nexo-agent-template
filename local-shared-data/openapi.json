@@ -675,13 +675,13 @@
         }
       }
     },
-    "/items/": {
+    "/apps/": {
       "get": {
         "tags": [
-          "item"
+          "app"
         ],
-        "summary": "Read Item",
-        "operationId": "read_item",
+        "summary": "Read App",
+        "operationId": "read_app",
         "security": [
           {
             "OAuth2PasswordBearer": []
@@ -722,7 +722,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Page_ItemRead_"
+                  "$ref": "#/components/schemas/Page_AppRead_"
                 }
               }
             }
@@ -741,10 +741,10 @@
       },
       "post": {
         "tags": [
-          "item"
+          "app"
         ],
-        "summary": "Create Item",
-        "operationId": "create_item",
+        "summary": "Create App",
+        "operationId": "create_app",
         "security": [
           {
             "OAuth2PasswordBearer": []
@@ -755,7 +755,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ItemCreate"
+                "$ref": "#/components/schemas/AppCreate"
               }
             }
           }
@@ -766,7 +766,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ItemRead"
+                  "$ref": "#/components/schemas/AppRead"
                 }
               }
             }
@@ -784,13 +784,13 @@
         }
       }
     },
-    "/items/{item_id}": {
+    "/apps/{app_id}": {
       "delete": {
         "tags": [
-          "item"
+          "app"
         ],
-        "summary": "Delete Item",
-        "operationId": "delete_item",
+        "summary": "Delete App",
+        "operationId": "delete_app",
         "security": [
           {
             "OAuth2PasswordBearer": []
@@ -798,13 +798,13 @@
         ],
         "parameters": [
           {
-            "name": "item_id",
+            "name": "app_id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid",
-              "title": "Item Id"
+              "title": "App Id"
             }
           }
         ],
@@ -833,6 +833,66 @@
   },
   "components": {
     "schemas": {
+      "AppCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "AppCreate"
+      },
+      "AppRead": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "User Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "id",
+          "user_id"
+        ],
+        "title": "AppRead"
+      },
       "BearerResponse": {
         "properties": {
           "access_token": {
@@ -946,93 +1006,11 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
-      "ItemCreate": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "quantity": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Quantity"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "title": "ItemCreate"
-      },
-      "ItemRead": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "quantity": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Quantity"
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
-          "user_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "User Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "id",
-          "user_id"
-        ],
-        "title": "ItemRead"
-      },
-      "Page_ItemRead_": {
+      "Page_AppRead_": {
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/ItemRead"
+              "$ref": "#/components/schemas/AppRead"
             },
             "type": "array",
             "title": "Items"
@@ -1092,7 +1070,7 @@
           "page",
           "size"
         ],
-        "title": "Page[ItemRead]"
+        "title": "Page[AppRead]"
       },
       "UserCreate": {
         "properties": {
