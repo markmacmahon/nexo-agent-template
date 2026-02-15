@@ -269,6 +269,23 @@ export function EditAppForm({ app }: EditAppFormProps) {
         <p className="text-lg text-muted-foreground">
           {t("APP_EDIT_SUBTITLE")}
         </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link href={`/dashboard/apps/${app.id}/chat`}>
+            <Button type="button" variant="default" className="gap-2">
+              <MessageSquare className="h-4 w-4" />
+              {t("SIM_TRY_CHAT")}
+            </Button>
+          </Link>
+          <Link
+            href={`/dashboard/apps/${app.id}/subscribers`}
+            data-testid="edit-app-subscribers-link"
+          >
+            <Button type="button" variant="default" className="gap-2">
+              <Users className="h-4 w-4" />
+              {t("SUBSCRIBERS_NAV_LINK")}
+            </Button>
+          </Link>
+        </div>
       </header>
 
       <form
@@ -406,23 +423,6 @@ export function EditAppForm({ app }: EditAppFormProps) {
                   {t("SIM_DISCLAIMER_DESC")}
                 </p>
               </div>
-            </div>
-            <div className="pt-2 flex gap-2">
-              <Link href={`/dashboard/apps/${app.id}/chat`}>
-                <Button type="button" variant="outline" className="gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  {t("SIM_TRY_CHAT")}
-                </Button>
-              </Link>
-              <Link
-                href={`/dashboard/apps/${app.id}/subscribers`}
-                data-testid="edit-app-subscribers-link"
-              >
-                <Button type="button" variant="outline" className="gap-2">
-                  <Users className="h-4 w-4" />
-                  {t("SUBSCRIBERS_NAV_LINK")}
-                </Button>
-              </Link>
             </div>
           </div>
         )}

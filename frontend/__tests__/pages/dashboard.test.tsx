@@ -5,8 +5,18 @@ import "@testing-library/jest-dom";
 import DashboardPage from "@/app/dashboard/page";
 
 describe("Dashboard Page", () => {
-  it("renders the welcome message", () => {
+  it("renders title and CTA to apps", () => {
     render(<DashboardPage />);
-    expect(screen.getByText("Welcome to your Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("Partner Dashboard")).toBeInTheDocument();
+    const cta = screen.getByRole("link", { name: /go to apps/i });
+    expect(cta).toBeInTheDocument();
+    expect(cta).toHaveAttribute("href", "/dashboard/apps");
+  });
+
+  it("renders subtitle describing apps and configuration", () => {
+    render(<DashboardPage />);
+    expect(
+      screen.getByText(/create and manage your agent apps/i),
+    ).toBeInTheDocument();
   });
 });

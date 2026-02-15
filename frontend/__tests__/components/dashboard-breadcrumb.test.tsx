@@ -51,7 +51,7 @@ describe("DashboardBreadcrumb", () => {
     expect(screen.getByText("New App")).toBeInTheDocument();
   });
 
-  it("renders app name breadcrumb on edit page from context", () => {
+  it("renders app name and Edit App breadcrumb on edit page from context", () => {
     mockPathname.mockReturnValue(
       "/dashboard/apps/123e4567-e89b-12d3-a456-426614174000/edit",
     );
@@ -61,9 +61,10 @@ describe("DashboardBreadcrumb", () => {
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
     expect(screen.getByText("Apps")).toBeInTheDocument();
     expect(screen.getByText("My Cool App")).toBeInTheDocument();
+    expect(screen.getByText("Edit App")).toBeInTheDocument();
   });
 
-  it('falls back to "Edit App" on edit page when no context title', () => {
+  it('falls back to app id and "Edit App" on edit page when no context title', () => {
     mockPathname.mockReturnValue(
       "/dashboard/apps/123e4567-e89b-12d3-a456-426614174000/edit",
     );
@@ -71,6 +72,9 @@ describe("DashboardBreadcrumb", () => {
 
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
     expect(screen.getByText("Apps")).toBeInTheDocument();
+    expect(
+      screen.getByText("123e4567-e89b-12d3-a456-426614174000"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Edit App")).toBeInTheDocument();
   });
 
@@ -126,12 +130,43 @@ describe("DashboardBreadcrumb", () => {
     expect(screen.getByText("Order issue")).toBeInTheDocument();
   });
 
-  it("links app name crumb to edit page from chat page", () => {
+  it("links app name crumb to app page from chat page", () => {
     mockPathname.mockReturnValue("/dashboard/apps/abc-123/chat");
     mockPageTitle.mockReturnValue("My App");
     render(<DashboardBreadcrumb />);
 
     const appLink = screen.getByText("My App").closest("a");
-    expect(appLink).toHaveAttribute("href", "/dashboard/apps/abc-123/edit");
+    expect(appLink).toHaveAttribute("href", "/dashboard/apps/abc-123");
+  });
+
+  it("renders app view page breadcrumb: Dashboard / Apps / App Name", () => {
+    mockPathname.mockReturnValue("/dashboard/apps/abc-123");
+    mockPageTitle.mockReturnValue("My App");
+    render(<DashboardBreadcrumb />);
+
+    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("Apps")).toBeInTheDocument();
+    expect(screen.getByText("My App")).toBeInTheDocument();
+  });
+
+  it("renders edit page with app name linking to app page", () => {
+    mockPathname.mockReturnValue("/dashboard/apps/abc-123/edit");
+    mockPageTitle.mockReturnValue("My App");
+    render(<DashboardBreadcrumb />);
+
+    const appLink = screen.getByText("My App").closest("a");
+    expect(appLink).toHaveAttribute("href", "/dashboard/apps/abc-123");
+    expect(screen.getByText("Edit App")).toBeInTheDocument();
+  });
+
+  it("renders subscribers page: Dashboard / Apps / App Name / Subscribers", () => {
+    mockPathname.mockReturnValue("/dashboard/apps/abc-123/subscribers");
+    mockPageTitle.mockReturnValue("My App");
+    render(<DashboardBreadcrumb />);
+
+    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("Apps")).toBeInTheDocument();
+    expect(screen.getByText("My App")).toBeInTheDocument();
+    expect(screen.getByText("Subscribers")).toBeInTheDocument();
   });
 });

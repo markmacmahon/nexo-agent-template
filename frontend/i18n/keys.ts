@@ -82,8 +82,12 @@ const messages = {
   NAV_CHAT: "Chat",
   NAV_LOGOUT: "Logout",
 
-  // ── Dashboard ───────────────────────────────────────────────────
+  // ── Dashboard (landing when logged in) ───────────────────────────
   NAV_WELCOME: "Welcome to your Dashboard",
+  DASHBOARD_TITLE: "Partner Dashboard",
+  DASHBOARD_SUBTITLE:
+    "Create and manage your agent apps. Configure simulators or webhooks, then chat and view subscribers.",
+  DASHBOARD_CTA: "Go to Apps",
 
   // ── Error pages ─────────────────────────────────────────────────
   ERROR_GENERIC: "Something went wrong. Please try again.",

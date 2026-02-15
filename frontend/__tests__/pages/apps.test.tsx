@@ -49,6 +49,21 @@ describe("Apps Page", () => {
     expect(screen.getByText("App Two")).toBeInTheDocument();
   });
 
+  it("links app name to app view page (not edit)", async () => {
+    mockFetchApps.mockResolvedValue({
+      data: {
+        items: [{ id: "app-1", name: "My App", description: "Desc" }],
+        total: 1,
+      },
+    });
+
+    const page = await AppsPage({ searchParams: defaultSearchParams });
+    render(page);
+
+    const appLink = screen.getByRole("link", { name: "My App" });
+    expect(appLink).toHaveAttribute("href", "/dashboard/apps/app-1");
+  });
+
   it("renders the Add New App button", async () => {
     mockFetchApps.mockResolvedValue({
       data: { items: [], total: 0 },

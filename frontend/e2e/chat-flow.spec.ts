@@ -26,17 +26,7 @@ async function openFirstAppChat(
 ): Promise<string> {
   await page.goto("/dashboard/apps");
   await page.waitForSelector("table", { timeout: 10000 });
-  const firstDropdownTrigger = page
-    .locator("table tbody tr")
-    .first()
-    .locator('button, [role="button"]')
-    .filter({ hasText: "..." });
-  await firstDropdownTrigger.click();
-  await page.waitForSelector('[role="menu"]', {
-    state: "visible",
-    timeout: 5000,
-  });
-  const chatLink = page.locator('a[href*="/chat"]').first();
+  const chatLink = page.getByRole("link", { name: "Chat" }).first();
   const href = await chatLink.getAttribute("href");
   expect(href).toBeTruthy();
   const match = href!.match(/\/apps\/([^/]+)\/chat/);
@@ -144,17 +134,16 @@ test.describe("Chat Flow", () => {
     await page.waitForSelector("table", { timeout: 10000 });
 
     await test.step("Open first app's edit page", async () => {
-      const firstDropdownTrigger = page
+      await page
         .locator("table tbody tr")
         .first()
-        .locator('button, [role="button"]')
-        .filter({ hasText: "..." });
-      await firstDropdownTrigger.click();
+        .getByRole("button", { name: "Actions" })
+        .click();
       await page.waitForSelector('[role="menu"]', {
         state: "visible",
         timeout: 5000,
       });
-      await page.getByRole("menuitem", { name: "Edit" }).click();
+      await page.getByRole("menuitem", { name: "Edit App" }).click();
       await expect(page).toHaveURL(/\/dashboard\/apps\/[^/]+\/edit/);
     });
 

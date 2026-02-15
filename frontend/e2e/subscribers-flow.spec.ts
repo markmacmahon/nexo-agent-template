@@ -24,18 +24,10 @@ async function getFirstAppId(
   await page.goto("/dashboard/apps");
   await page.waitForSelector("table", { timeout: 10000 });
   const firstRow = page.locator("table tbody tr").first();
-  const dropdown = firstRow
-    .locator('button, [role="button"]')
-    .filter({ hasText: "..." });
-  await dropdown.click();
-  await page.waitForSelector('[role="menu"]', {
-    state: "visible",
-    timeout: 5000,
-  });
-  const editLink = page.locator('a[href*="/edit"]').first();
-  const href = await editLink.getAttribute("href");
+  const appLink = firstRow.locator('a[href^="/dashboard/apps/"]').first();
+  const href = await appLink.getAttribute("href");
   expect(href).toBeTruthy();
-  const match = href!.match(/\/apps\/([^/]+)\/edit/);
+  const match = href!.match(/\/apps\/([^/]+)\/?$/);
   expect(match).toBeTruthy();
   return match![1];
 }
@@ -45,15 +37,15 @@ test.describe("Subscribers Flow", () => {
     await page.goto("/");
   });
 
-  test("subscribers page: navigate from edit app shows 3 panels and empty state", async ({
+  test("subscribers page: navigate from app page shows 3 panels and empty state", async ({
     page,
   }) => {
     await login(page);
     const appId = await getFirstAppId(page);
 
-    await page.goto(`/dashboard/apps/${appId}/edit`);
-    await page.waitForSelector("form", { timeout: 10000 });
-    await page.getByTestId("edit-app-subscribers-link").click();
+    await page.goto(`/dashboard/apps/${appId}`);
+    await page.waitForSelector("h1", { timeout: 10000 });
+    await page.getByTestId("app-view-subscribers-link").click();
     await page.waitForURL(`/dashboard/apps/${appId}/subscribers`);
 
     await expect(page.getByTestId("subscribers-container")).toBeVisible();
@@ -84,5 +76,57 @@ test.describe("Subscribers Flow", () => {
     await expect(page.getByTestId("subscribers-threads-panel")).toBeVisible();
     await expect(page.getByTestId("subscribers-chat-panel")).toBeVisible();
     await expect(page.getByTestId("subscribers-search")).toBeVisible();
+  });
+
+  test("app page: clicking app name in list opens app page with actions", async ({
+    page,
+  }) => {
+    await login(page);
+    await page.goto("/dashboard/apps");
+    await page.waitForSelector("table", { timeout: 10000 });
+
+    const firstAppLink = page
+      .locator("table tbody tr")
+      .first()
+      .locator('a[href^="/dashboard/apps/"]')
+      .first();
+    await firstAppLink.click();
+
+    await expect(page).toHaveURL(/\/dashboard\/apps\/[^/]+$/);
+    await expect(page.getByTestId("app-view-subscribers-link")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: /chat/i }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: /edit/i }).first(),
+    ).toBeVisible();
+  });
+
+  test("app page: Edit button navigates to edit page", async ({ page }) => {
+    await login(page);
+    const appId = await getFirstAppId(page);
+
+    await page.goto(`/dashboard/apps/${appId}`);
+    await page.waitForSelector("h1", { timeout: 10000 });
+    await page.getByRole("link", { name: /edit/i }).first().click();
+
+    await expect(page).toHaveURL(new RegExp(`/dashboard/apps/${appId}/edit`));
+    await expect(
+      page.getByRole("heading", { name: /edit app/i }),
+    ).toBeVisible();
+  });
+
+  test("app page: Chat link navigates to chat page", async ({ page }) => {
+    await login(page);
+    const appId = await getFirstAppId(page);
+
+    await page.goto(`/dashboard/apps/${appId}`);
+    await page.waitForSelector("h1", { timeout: 10000 });
+    await page.getByRole("link", { name: /chat/i }).first().click();
+
+    await expect(page).toHaveURL(new RegExp(`/dashboard/apps/${appId}/chat`));
+    await expect(page.getByTestId("chat-container")).toBeVisible({
+      timeout: 10000,
+    });
   });
 });

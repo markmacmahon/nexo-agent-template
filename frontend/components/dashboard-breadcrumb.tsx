@@ -28,9 +28,10 @@ interface DashboardBreadcrumbProps {
  *   /dashboard                    → Dashboard
  *   /dashboard/apps               → Dashboard / Apps
  *   /dashboard/apps/new           → Dashboard / Apps / New App
- *   /dashboard/apps/:id/edit      → Dashboard / Apps / <App Name>
+ *   /dashboard/apps/:id           → Dashboard / Apps / <App Name>
+ *   /dashboard/apps/:id/edit      → Dashboard / Apps / <App Name> / Edit App
  *   /dashboard/apps/:id/chat      → Dashboard / Apps / <App Name> / Chat
- *   /dashboard/apps/:id/chat (thread) → Dashboard / Apps / <App Name> / Chat / <Thread Title>
+ *   /dashboard/apps/:id/subscribers → Dashboard / Apps / <App Name> / Subscribers
  */
 export function DashboardBreadcrumb({ pageTitle }: DashboardBreadcrumbProps) {
   const pathname = usePathname();
@@ -92,39 +93,59 @@ function buildCrumbs(
       return crumbs;
     }
 
-    // Extract app ID for edit and chat routes
+    // Extract app ID for app view, edit, chat, subscribers
     const appIdMatch = pathname.match(/^\/dashboard\/apps\/([^/]+)/);
     const appId = appIdMatch?.[1];
+    const appPageHref = appId ? `/dashboard/apps/${appId}` : "";
+
+    // App view page: /dashboard/apps/:id
+    if (pathname.match(/^\/dashboard\/apps\/[^/]+$/)) {
+      crumbs.push({
+        label: pageTitle ?? appId ?? t("NAV_APPS"),
+        href: pathname,
+      });
+      return crumbs;
+    }
 
     if (pathname.match(/^\/dashboard\/apps\/[^/]+\/edit$/)) {
       crumbs.push({
-        label: pageTitle ?? t("NAV_EDIT_APP"),
+        label: pageTitle ?? appId ?? t("NAV_APPS"),
+        href: appPageHref,
+      });
+      crumbs.push({
+        label: t("NAV_EDIT_APP"),
         href: pathname,
       });
       return crumbs;
     }
 
     if (pathname.match(/^\/dashboard\/apps\/[^/]+\/chat$/)) {
-      // App name crumb (links to edit page)
       crumbs.push({
-        label: pageTitle ?? t("NAV_CHAT"),
-        href: `/dashboard/apps/${appId}/edit`,
+        label: pageTitle ?? appId ?? t("NAV_APPS"),
+        href: appPageHref,
       });
-
-      // Chat crumb
       crumbs.push({
         label: t("NAV_CHAT"),
         href: pathname,
       });
-
-      // Extra segments from context (e.g. thread title)
       for (const seg of extraSegments) {
         crumbs.push({
           label: seg.label,
           href: seg.href ?? pathname,
         });
       }
+      return crumbs;
+    }
 
+    if (pathname.match(/^\/dashboard\/apps\/[^/]+\/subscribers$/)) {
+      crumbs.push({
+        label: pageTitle ?? appId ?? t("NAV_APPS"),
+        href: appPageHref,
+      });
+      crumbs.push({
+        label: t("SUBSCRIBERS_NAV_LINK"),
+        href: pathname,
+      });
       return crumbs;
     }
   }
