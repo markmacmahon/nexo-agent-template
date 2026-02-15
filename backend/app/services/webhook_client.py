@@ -31,7 +31,9 @@ def validate_webhook_url(url: str) -> bool:
     parsed = urlparse(url)
 
     if parsed.scheme not in ("http", "https"):
-        raise ValueError(f"Webhook URL must use http or https scheme, got '{parsed.scheme}'")
+        raise ValueError(
+            f"Webhook URL must use http or https scheme, got '{parsed.scheme}'"
+        )
 
     host = parsed.hostname or ""
     if not host:
@@ -99,7 +101,9 @@ class WebhookClient:
             source="webhook",
             metadata={
                 "status_code": response.status_code,
-                **({"webhook_metadata": data["metadata"]} if "metadata" in data else {}),
+                **(
+                    {"webhook_metadata": data["metadata"]} if "metadata" in data else {}
+                ),
             },
             pending=False,
         )

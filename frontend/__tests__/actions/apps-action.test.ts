@@ -195,6 +195,7 @@ describe("addApp", () => {
         name: "My App",
         description: "My app description",
         webhook_url: null,
+        webhook_secret: null,
         config_json: { integration: { mode: "simulator" } },
       },
     });
@@ -223,6 +224,7 @@ describe("addApp", () => {
         name: "Webhook App",
         description: "Uses webhooks",
         webhook_url: "https://example.com/hook",
+        webhook_secret: null,
         config_json: { integration: { mode: "webhook" } },
       },
     });
@@ -431,5 +433,108 @@ describe("editApp", () => {
 
     expect(result).toEqual({ message: "APP_NOT_FOUND" });
     expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it("sends new webhook_secret when changed", async () => {
+    const mockCookieStore = await cookies();
+    (mockCookieStore.get as jest.Mock).mockReturnValue({
+      value: "test-token",
+    });
+
+    (updateApp as jest.Mock).mockResolvedValue({});
+
+    const formData = new FormData();
+    formData.set("name", "App");
+    formData.set("description", "Desc");
+    formData.set("integration_mode", "webhook");
+    formData.set("webhook_url", "https://example.com/hook");
+    formData.set("webhook_secret", "brand-new-secret-key");
+
+    await editApp("app-1", {}, formData);
+
+    expect(updateApp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({
+          webhook_secret: "brand-new-secret-key",
+        }),
+      }),
+    );
+  });
+
+  it("does NOT send webhook_secret when masked value unchanged", async () => {
+    const mockCookieStore = await cookies();
+    (mockCookieStore.get as jest.Mock).mockReturnValue({
+      value: "test-token",
+    });
+
+    (updateApp as jest.Mock).mockResolvedValue({});
+
+    const formData = new FormData();
+    formData.set("name", "App");
+    formData.set("description", "Desc");
+    formData.set("integration_mode", "webhook");
+    formData.set("webhook_url", "https://example.com/hook");
+    formData.set("webhook_secret", "••••••");
+
+    await editApp("app-1", {}, formData);
+
+    const callBody = (updateApp as jest.Mock).mock.calls[0][0].body;
+    expect(callBody).not.toHaveProperty("webhook_secret");
+  });
+
+  it("sends null webhook_secret when cleared (empty string)", async () => {
+    const mockCookieStore = await cookies();
+    (mockCookieStore.get as jest.Mock).mockReturnValue({
+      value: "test-token",
+    });
+
+    (updateApp as jest.Mock).mockResolvedValue({});
+
+    const formData = new FormData();
+    formData.set("name", "App");
+    formData.set("description", "Desc");
+    formData.set("integration_mode", "webhook");
+    formData.set("webhook_url", "https://example.com/hook");
+    formData.set("webhook_secret", "");
+
+    await editApp("app-1", {}, formData);
+
+    const callBody = (updateApp as jest.Mock).mock.calls[0][0].body;
+    expect(callBody.webhook_secret).toBeNull();
+  });
+});
+
+describe("addApp with webhook_secret", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("sends webhook_secret when provided", async () => {
+    const mockCookieStore = await cookies();
+    (mockCookieStore.get as jest.Mock).mockReturnValue({
+      value: "test-token",
+    });
+
+    (createApp as jest.Mock).mockResolvedValue({});
+
+    const formData = new FormData();
+    formData.set("name", "Signed App");
+    formData.set("description", "With signing");
+    formData.set("integration_mode", "webhook");
+    formData.set("webhook_url", "https://example.com/hook");
+    formData.set("webhook_secret", "my-new-secret");
+
+    await addApp({}, formData);
+
+    expect(createApp).toHaveBeenCalledWith({
+      headers: { Authorization: "Bearer test-token" },
+      body: {
+        name: "Signed App",
+        description: "With signing",
+        webhook_url: "https://example.com/hook",
+        webhook_secret: "my-new-secret",
+        config_json: { integration: { mode: "webhook" } },
+      },
+    });
   });
 });

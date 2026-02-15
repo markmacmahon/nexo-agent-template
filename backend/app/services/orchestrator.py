@@ -1,5 +1,6 @@
 """ChatOrchestrator -- central routing logic for integration modes."""
 
+import json
 import logging
 from collections.abc import AsyncIterator
 from datetime import datetime, timezone
@@ -12,6 +13,7 @@ from app.schemas import (
     WebhookHistoryEntry,
 )
 from app.services.simulator import SimulatorHandler
+from app.services.webhook_signing import sign_webhook_request
 from app.config import settings
 from app.services.webhook_client import WebhookClient, WebhookError
 
@@ -37,6 +39,52 @@ def _get_simulator_config(config_json: dict[str, Any]) -> dict[str, Any]:
 def _get_webhook_timeout(config_json: dict[str, Any]) -> int:
     webhook_cfg = config_json.get("webhook", {})
     return webhook_cfg.get("timeout_ms", 8000)
+
+
+def _build_webhook_headers(
+    app: Any,
+    thread: Any,
+    raw_body: str,
+) -> dict[str, str]:
+    """Build webhook headers, including HMAC signature if secret is configured."""
+    headers = {
+        "Content-Type": "application/json",
+        settings.WEBHOOK_HEADER_APP_ID: str(app.id),
+        settings.WEBHOOK_HEADER_THREAD_ID: str(thread.id),
+    }
+
+    if app.webhook_secret:
+        timestamp, signature = sign_webhook_request(app.webhook_secret, raw_body)
+        headers[settings.WEBHOOK_HEADER_TIMESTAMP] = str(timestamp)
+        headers[settings.WEBHOOK_HEADER_SIGNATURE] = signature
+
+    return headers
+
+
+def _serialize_payload(payload_dict: dict[str, Any]) -> str:
+    """Serialize payload to a stable JSON string for signing."""
+    return json.dumps(payload_dict, separators=(",", ":"), sort_keys=False)
+
+
+def _build_payload_dict(
+    app: Any,
+    thread: Any,
+    user_message: str,
+    message: Any = None,
+    history: list[Any] | None = None,
+) -> dict[str, Any]:
+    """Build the payload dict from either a message object or raw text."""
+    if message:
+        payload = build_webhook_payload(app, thread, message, history)
+        return payload.model_dump()
+    return {
+        "version": "1.0",
+        "event": "message_received",
+        "app": {"id": str(app.id), "name": app.name or ""},
+        "thread": {"id": str(thread.id), "customer_id": thread.customer_id},
+        "message": {"content": user_message},
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 def build_webhook_payload(
@@ -146,24 +194,11 @@ class ChatOrchestrator:
             timeout_ms = _get_webhook_timeout(config)
             client = WebhookClient(url=app.webhook_url, timeout_ms=timeout_ms)
 
-            if message:
-                payload = build_webhook_payload(app, thread, message, history)
-                payload_dict = payload.model_dump()
-            else:
-                payload_dict = {
-                    "version": "1.0",
-                    "event": "message_received",
-                    "app": {"id": str(app.id), "name": app.name or ""},
-                    "thread": {"id": str(thread.id), "customer_id": thread.customer_id},
-                    "message": {"content": user_message},
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                }
-
-            wh_headers = {
-                "Content-Type": "application/json",
-                settings.WEBHOOK_HEADER_APP_ID: str(app.id),
-                settings.WEBHOOK_HEADER_THREAD_ID: str(thread.id),
-            }
+            payload_dict = _build_payload_dict(
+                app, thread, user_message, message, history
+            )
+            raw_body = _serialize_payload(payload_dict)
+            wh_headers = _build_webhook_headers(app, thread, raw_body)
 
             try:
                 async for chunk in client.send_stream(payload_dict, headers=wh_headers):
@@ -204,25 +239,9 @@ class ChatOrchestrator:
         timeout_ms = _get_webhook_timeout(config)
         client = WebhookClient(url=app.webhook_url, timeout_ms=timeout_ms)
 
-        if message:
-            payload = build_webhook_payload(app, thread, message, history)
-            payload_dict = payload.model_dump()
-        else:
-            # Fallback for callers not passing message object
-            payload_dict = {
-                "version": "1.0",
-                "event": "message_received",
-                "app": {"id": str(app.id), "name": app.name or ""},
-                "thread": {"id": str(thread.id), "customer_id": thread.customer_id},
-                "message": {"content": user_message},
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
-
-        headers = {
-            "Content-Type": "application/json",
-            settings.WEBHOOK_HEADER_APP_ID: str(app.id),
-            settings.WEBHOOK_HEADER_THREAD_ID: str(thread.id),
-        }
+        payload_dict = _build_payload_dict(app, thread, user_message, message, history)
+        raw_body = _serialize_payload(payload_dict)
+        headers = _build_webhook_headers(app, thread, raw_body)
 
         try:
             return await client.send_sync(payload_dict, headers=headers)

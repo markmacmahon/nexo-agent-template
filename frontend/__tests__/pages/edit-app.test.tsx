@@ -12,6 +12,7 @@ jest.mock("../../components/actions/apps-action", () => ({
       name: "Test App",
       description: "Test Description",
       webhook_url: "https://example.com/hook",
+      webhook_secret: "••••••",
       config_json: { integration: { mode: "webhook" } },
     },
   }),
@@ -82,6 +83,42 @@ describe("Edit App Page", () => {
     const input = screen.getByLabelText(/webhook url/i) as HTMLInputElement;
     expect(input).toBeInTheDocument();
     expect(input.value).toBe("https://example.com/hook");
+  });
+
+  it("renders webhook secret field in webhook mode", async () => {
+    const page = await EditAppPage({ params: defaultParams });
+    render(page);
+
+    const secretInput = screen.getByLabelText(
+      /webhook secret/i,
+    ) as HTMLInputElement;
+    expect(secretInput).toBeInTheDocument();
+    expect(secretInput.type).toBe("password");
+  });
+
+  it("renders generate secret button in webhook mode", async () => {
+    const page = await EditAppPage({ params: defaultParams });
+    render(page);
+
+    expect(
+      screen.getByRole("button", { name: /generate/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders webhook security section heading", async () => {
+    const page = await EditAppPage({ params: defaultParams });
+    render(page);
+
+    expect(screen.getByText("Webhook Security (Optional)")).toBeInTheDocument();
+  });
+
+  it("renders signature verification tab in webhook contract", async () => {
+    const page = await EditAppPage({ params: defaultParams });
+    render(page);
+
+    expect(
+      screen.getByRole("button", { name: /signature verification/i }),
+    ).toBeInTheDocument();
   });
 
   it("shows fallback message with back link on error", async () => {

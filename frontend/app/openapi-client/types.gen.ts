@@ -501,6 +501,10 @@ export type WebhookTestResponse = {
    * Response Text
    */
   response_text?: string | null;
+  /**
+   * Signature Sent
+   */
+  signature_sent?: boolean;
 };
 
 /**

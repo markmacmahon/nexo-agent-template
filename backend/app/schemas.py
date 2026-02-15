@@ -49,6 +49,13 @@ class AppRead(AppBase):
 
     model_config = {"from_attributes": True}
 
+    @classmethod
+    def mask_secret(cls, app: "AppRead") -> "AppRead":
+        """Return a copy with webhook_secret masked."""
+        if app.webhook_secret:
+            app = app.model_copy(update={"webhook_secret": "••••••"})
+        return app
+
 
 # --- Run / Orchestration schemas ---
 
@@ -118,6 +125,7 @@ class WebhookTestResponse(BaseModel):
     error: str | None = None
     response_json: dict[str, Any] | None = None
     response_text: str | None = None
+    signature_sent: bool = False
 
 
 # Thread schemas

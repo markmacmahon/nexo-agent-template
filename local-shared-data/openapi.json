@@ -2643,6 +2643,11 @@
               }
             ],
             "title": "Response Text"
+          },
+          "signature_sent": {
+            "type": "boolean",
+            "title": "Signature Sent",
+            "default": false
           }
         },
         "type": "object",

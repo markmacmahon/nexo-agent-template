@@ -100,6 +100,8 @@ export async function addApp(prevState: {}, formData: FormData) {
   const { name, description, integration_mode, webhook_url } =
     validatedFields.data;
 
+  const webhookSecret = formData.get("webhook_secret") as string | null;
+
   const { error } = await createApp({
     headers: {
       Authorization: `Bearer ${token}`,
@@ -108,6 +110,7 @@ export async function addApp(prevState: {}, formData: FormData) {
       name,
       description,
       webhook_url: webhook_url || null,
+      webhook_secret: webhookSecret || null,
       config_json: {
         integration: { mode: integration_mode },
       },
@@ -183,19 +186,30 @@ export async function editApp(
   const { name, description, integration_mode, webhook_url } =
     validatedFields.data;
 
+  const webhookSecret = formData.get("webhook_secret") as string | null;
+
+  // Only send webhook_secret if it was explicitly changed (not the masked placeholder)
+  const body: Record<string, unknown> = {
+    name,
+    description,
+    webhook_url: webhook_url || null,
+    config_json: {
+      integration: { mode: integration_mode },
+    },
+  };
+
+  if (webhookSecret && webhookSecret !== "••••••") {
+    body.webhook_secret = webhookSecret;
+  } else if (webhookSecret === "") {
+    body.webhook_secret = null;
+  }
+
   const { error } = await updateApp({
     path: { app_id: appId },
     headers: {
       Authorization: `Bearer ${token}`,
     },
-    body: {
-      name,
-      description,
-      webhook_url: webhook_url || null,
-      config_json: {
-        integration: { mode: integration_mode },
-      },
-    },
+    body,
   });
 
   if (error) {

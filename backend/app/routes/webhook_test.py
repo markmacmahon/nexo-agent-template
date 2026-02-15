@@ -1,5 +1,6 @@
 """Test webhook endpoint for validating webhook configuration."""
 
+import json
 import logging
 import time
 from datetime import datetime, timezone
@@ -20,6 +21,7 @@ from app.schemas import (
 )
 from app.config import settings
 from app.services.webhook_client import validate_webhook_url
+from app.services.webhook_signing import sign_webhook_request
 from app.users import current_active_user
 
 logger = logging.getLogger(__name__)
@@ -35,7 +37,10 @@ def _build_test_payload(app: App, sample_message: str) -> dict:
         version="1.0",
         event="message_received",
         app={"id": str(app.id), "name": app.name or ""},
-        thread={"id": "00000000-0000-0000-0000-000000000000", "customer_id": "test-customer"},
+        thread={
+            "id": "00000000-0000-0000-0000-000000000000",
+            "customer_id": "test-customer",
+        },
         message=WebhookMessagePayload(
             id="00000000-0000-0000-0000-000000000001",
             seq=1,
@@ -74,11 +79,22 @@ async def webhook_test(
     sample_message = body.sample_message or "Hello"
     payload = _build_test_payload(app, sample_message)
 
+    # Stable JSON serialization for signing
+    raw_body = json.dumps(payload, separators=(",", ":"), sort_keys=False)
+
     headers = {
         "Content-Type": "application/json",
         settings.WEBHOOK_HEADER_APP_ID: str(app.id),
         settings.WEBHOOK_HEADER_THREAD_ID: "00000000-0000-0000-0000-000000000000",
     }
+
+    # Add signature headers if secret is configured
+    signature_sent = False
+    if app.webhook_secret:
+        timestamp, signature = sign_webhook_request(app.webhook_secret, raw_body)
+        headers[settings.WEBHOOK_HEADER_TIMESTAMP] = str(timestamp)
+        headers[settings.WEBHOOK_HEADER_SIGNATURE] = signature
+        signature_sent = True
 
     # Send request and capture results
     start = time.monotonic()
@@ -104,6 +120,7 @@ async def webhook_test(
                 error=f"Webhook returned HTTP {response.status_code}",
                 response_json=response_json,
                 response_text=response.text[:2000],
+                signature_sent=signature_sent,
             )
 
         if response_json is None:
@@ -113,6 +130,7 @@ async def webhook_test(
                 latency_ms=latency_ms,
                 error="Response is not valid JSON",
                 response_text=response.text[:2000],
+                signature_sent=signature_sent,
             )
 
         if "reply" not in response_json:
@@ -122,6 +140,7 @@ async def webhook_test(
                 latency_ms=latency_ms,
                 error="Response missing required 'reply' field",
                 response_json=response_json,
+                signature_sent=signature_sent,
             )
 
         return WebhookTestResponse(
@@ -129,15 +148,22 @@ async def webhook_test(
             status_code=response.status_code,
             latency_ms=latency_ms,
             response_json=response_json,
+            signature_sent=signature_sent,
         )
 
     except httpx.TimeoutException:
         latency_ms = int((time.monotonic() - start) * 1000)
         return WebhookTestResponse(
-            ok=False, latency_ms=latency_ms, error="Request timed out"
+            ok=False,
+            latency_ms=latency_ms,
+            error="Request timed out",
+            signature_sent=signature_sent,
         )
     except Exception as exc:
         latency_ms = int((time.monotonic() - start) * 1000)
         return WebhookTestResponse(
-            ok=False, latency_ms=latency_ms, error=f"Connection error: {exc}"
+            ok=False,
+            latency_ms=latency_ms,
+            error=f"Connection error: {exc}",
+            signature_sent=signature_sent,
         )

@@ -1,7 +1,5 @@
 """Tests for /run (sync) and /run/stream (SSE) endpoints."""
 
-import json
-
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -80,9 +78,7 @@ async def test_run_sync_persists_assistant_message(
     app_id, thread_id = await _create_app_and_thread(test_client, headers)
     await _send_user_message(test_client, headers, app_id, thread_id, "Test")
 
-    await test_client.post(
-        f"/apps/{app_id}/threads/{thread_id}/run", headers=headers
-    )
+    await test_client.post(f"/apps/{app_id}/threads/{thread_id}/run", headers=headers)
 
     # Verify message is persisted
     msgs_resp = await test_client.get(
@@ -209,9 +205,9 @@ def _parse_sse(text: str) -> list[dict]:
 
     for line in text.split("\n"):
         if line.startswith("event:"):
-            current_event = line[len("event:"):].strip()
+            current_event = line[len("event:") :].strip()
         elif line.startswith("data:"):
-            current_data.append(line[len("data:"):].strip())
+            current_data.append(line[len("data:") :].strip())
         elif line == "" and current_data:
             events.append({"event": current_event, "data": "\n".join(current_data)})
             current_event = "message"

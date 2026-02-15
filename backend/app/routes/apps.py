@@ -15,7 +15,7 @@ router = APIRouter(tags=["app"])
 
 
 def transform_apps(apps):
-    return [AppRead.model_validate(app) for app in apps]
+    return [AppRead.mask_secret(AppRead.model_validate(app)) for app in apps]
 
 
 @router.get("/", response_model=Page[AppRead])
@@ -40,7 +40,7 @@ async def create_app(
     db.add(db_app)
     await db.commit()
     await db.refresh(db_app)
-    return db_app
+    return AppRead.mask_secret(AppRead.model_validate(db_app))
 
 
 @router.get("/{app_id}", response_model=AppRead)
@@ -57,7 +57,7 @@ async def get_app(
     if not app:
         raise HTTPException(status_code=404, detail="App not found or not authorized")
 
-    return app
+    return AppRead.mask_secret(AppRead.model_validate(app))
 
 
 @router.patch("/{app_id}", response_model=AppRead)
@@ -81,7 +81,7 @@ async def update_app(
 
     await db.commit()
     await db.refresh(app)
-    return app
+    return AppRead.mask_secret(AppRead.model_validate(app))
 
 
 @router.delete("/{app_id}")

@@ -148,8 +148,8 @@ class TestWebhookClient:
 
         async def fake_stream():
             chunks = [
-                b"event: delta\ndata: {\"text\": \"Hello\"}\n\n",
-                b"event: delta\ndata: {\"text\": \" world\"}\n\n",
+                b'event: delta\ndata: {"text": "Hello"}\n\n',
+                b'event: delta\ndata: {"text": " world"}\n\n',
                 b"event: done\ndata: {}\n\n",
             ]
             for chunk in chunks:

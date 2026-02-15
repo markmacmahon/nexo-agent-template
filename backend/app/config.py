@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     # Webhook header names (override to brand your headers)
     WEBHOOK_HEADER_APP_ID: str = "X-App-Id"
     WEBHOOK_HEADER_THREAD_ID: str = "X-Thread-Id"
+    WEBHOOK_HEADER_TIMESTAMP: str = "X-Timestamp"
+    WEBHOOK_HEADER_SIGNATURE: str = "X-Signature"
 
     # CORS - Safe default for local development
     CORS_ORIGINS: Set[str] = {"http://localhost:3000", "http://localhost:8000"}

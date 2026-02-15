@@ -128,12 +128,44 @@ async def webhook(request: Request):
 
 # Tip: use ngrok to expose localhost.`;
 
+const VERIFY_SIG_NODE = `const crypto = require("crypto");
+
+function verifySignature(req, secret) {
+  const timestamp = req.headers["x-timestamp"];
+  const signature = req.headers["x-signature"];
+
+  const payload = timestamp + "." + JSON.stringify(req.body);
+
+  const expected = "sha256=" +
+    crypto.createHmac("sha256", secret)
+      .update(payload)
+      .digest("hex");
+
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expected)
+  );
+}`;
+
+const VERIFY_SIG_PYTHON = `import hmac
+import hashlib
+
+def verify_signature(secret, timestamp, body, signature):
+    payload = f"{timestamp}.{body}"
+    expected = "sha256=" + hmac.new(
+        secret.encode(),
+        payload.encode(),
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature)`;
+
 interface EditAppFormProps {
   app: {
     id: string;
     name: string;
     description?: string | null;
     webhook_url?: string | null;
+    webhook_secret?: string | null;
     config_json?: Record<string, unknown>;
   };
 }
@@ -153,13 +185,23 @@ export function EditAppForm({ app }: EditAppFormProps) {
 
   const [selectedMode, setSelectedMode] = useState<string>(currentMode);
   const [webhookUrl, setWebhookUrl] = useState(app.webhook_url ?? "");
+  const [webhookSecret, setWebhookSecret] = useState(app.webhook_secret ?? "");
   const [contractTab, setContractTab] = useState<
-    "request" | "response" | "examples"
+    "request" | "response" | "examples" | "signing"
   >("request");
   const [sseExpanded, setSseExpanded] = useState(false);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
+  };
+
+  const generateSecret = () => {
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    const hex = Array.from(bytes)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    setWebhookSecret(hex);
   };
 
   // --- Test webhook state ---
@@ -316,9 +358,56 @@ export function EditAppForm({ app }: EditAppFormProps) {
           </div>
         )}
 
-        {/* Hidden webhook_url for simulator mode */}
+        {/* === Webhook Security (only if webhook) === */}
+        {selectedMode === "webhook" && (
+          <div className="space-y-4 border-t border-border pt-6">
+            <h2 className="text-lg font-semibold">
+              Webhook Security (Optional)
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              If set, each webhook request will be signed using HMAC-SHA256.
+              Your server can verify the signature to ensure authenticity.
+            </p>
+            <div className="flex gap-3 items-end">
+              <div className="flex-1 space-y-2">
+                <Label htmlFor="webhook_secret">Webhook Secret</Label>
+                <Input
+                  id="webhook_secret"
+                  name="webhook_secret"
+                  type="password"
+                  placeholder="Enter or generate a secret"
+                  value={webhookSecret}
+                  onChange={(e) => setWebhookSecret(e.target.value)}
+                  className="w-full font-mono"
+                />
+              </div>
+              <Button type="button" variant="outline" onClick={generateSecret}>
+                Generate
+              </Button>
+              {webhookSecret && webhookSecret !== "••••••" && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setWebhookSecret("")}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+            {webhookSecret && webhookSecret !== "••••••" && (
+              <p className="text-xs text-muted-foreground">
+                Copy this secret now — it will be masked after saving.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Hidden fields for simulator mode */}
         {selectedMode !== "webhook" && (
-          <input type="hidden" name="webhook_url" value="" />
+          <>
+            <input type="hidden" name="webhook_url" value="" />
+            <input type="hidden" name="webhook_secret" value="" />
+          </>
         )}
 
         <SubmitButton text="Update App" />
@@ -385,6 +474,12 @@ export function EditAppForm({ app }: EditAppFormProps) {
                   <p className="text-red-700">{testResult.error as string}</p>
                 </div>
               )}
+              {testResult.signature_sent !== undefined && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Signature:{" "}
+                  {testResult.signature_sent ? "Sent ✓" : "Not configured"}
+                </p>
+              )}
               <details className="mt-3">
                 <summary className="cursor-pointer text-xs text-muted-foreground">
                   Raw response
@@ -414,6 +509,7 @@ export function EditAppForm({ app }: EditAppFormProps) {
                 ["request", "Request"],
                 ["response", "Response"],
                 ["examples", "Examples"],
+                ["signing", "Signature Verification"],
               ] as const
             ).map(([key, label]) => (
               <button
@@ -523,6 +619,93 @@ export function EditAppForm({ app }: EditAppFormProps) {
                   </pre>
                 </div>
               </div>
+            </div>
+          )}
+
+          {contractTab === "signing" && (
+            <div className="space-y-4 text-sm text-muted-foreground">
+              <p>
+                When a webhook secret is configured, each request is signed
+                using HMAC-SHA256.
+              </p>
+
+              <div>
+                <h3 className="text-sm font-medium text-foreground">
+                  Signature headers
+                </h3>
+                <pre className="mt-2 rounded-md bg-muted p-3 text-xs overflow-x-auto text-foreground">
+                  {`X-Timestamp: 1707960000
+X-Signature: sha256=...`}
+                </pre>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium text-foreground">
+                  How signing works
+                </h3>
+                <ol className="mt-2 list-decimal list-inside space-y-1">
+                  <li>
+                    Build the signed payload:{" "}
+                    <code className="font-mono text-xs text-foreground">
+                      {`"<timestamp>.<raw_body>"`}
+                    </code>
+                  </li>
+                  <li>
+                    Compute{" "}
+                    <code className="font-mono text-xs text-foreground">
+                      HMAC-SHA256(secret, signed_payload)
+                    </code>
+                  </li>
+                  <li>
+                    Compare{" "}
+                    <code className="font-mono text-xs text-foreground">
+                      X-Signature
+                    </code>{" "}
+                    header value using constant-time comparison
+                  </li>
+                </ol>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium text-foreground">
+                  Node.js verification
+                </h3>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(VERIFY_SIG_NODE)}
+                    className="absolute top-2 right-2 text-muted-foreground hover:text-foreground"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                  <pre className="mt-2 rounded-md bg-muted p-3 text-xs overflow-x-auto text-foreground">
+                    {VERIFY_SIG_NODE}
+                  </pre>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium text-foreground">
+                  Python verification
+                </h3>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(VERIFY_SIG_PYTHON)}
+                    className="absolute top-2 right-2 text-muted-foreground hover:text-foreground"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                  <pre className="mt-2 rounded-md bg-muted p-3 text-xs overflow-x-auto text-foreground">
+                    {VERIFY_SIG_PYTHON}
+                  </pre>
+                </div>
+              </div>
+
+              <p className="text-xs border-l-2 border-amber-500 pl-3">
+                <strong className="text-foreground">Replay protection:</strong>{" "}
+                Reject requests if the timestamp is older than 5 minutes.
+              </p>
             </div>
           )}
         </div>

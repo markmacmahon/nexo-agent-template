@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 
+from app.config import settings
 from app.services.orchestrator import ChatOrchestrator
 from app.services.webhook_client import WebhookError
 from app.schemas import RunResult
@@ -67,7 +68,9 @@ class TestChatOrchestrator:
         app = _make_app(mode="webhook", webhook_url="https://example.com/hook")
         thread = _make_thread()
 
-        mock_result = RunResult(reply_text="Webhook says hi", source="webhook", pending=False)
+        mock_result = RunResult(
+            reply_text="Webhook says hi", source="webhook", pending=False
+        )
 
         with patch("app.services.orchestrator.WebhookClient") as mock_cls:
             mock_instance = AsyncMock()
@@ -78,6 +81,53 @@ class TestChatOrchestrator:
 
         assert result.source == "webhook"
         assert result.reply_text == "Webhook says hi"
+
+    @pytest.mark.asyncio
+    async def test_webhook_without_secret_sends_no_signature(self):
+        """Webhook without secret does not include signature headers."""
+        app = _make_app(mode="webhook", webhook_url="https://example.com/hook")
+        app.webhook_secret = None
+        thread = _make_thread()
+
+        mock_result = RunResult(reply_text="OK", source="webhook", pending=False)
+
+        with patch("app.services.orchestrator.WebhookClient") as mock_cls:
+            mock_instance = AsyncMock()
+            mock_instance.send_sync.return_value = mock_result
+            mock_cls.return_value = mock_instance
+
+            await ChatOrchestrator.run(app, thread, "Hello")
+
+            call_kwargs = mock_instance.send_sync.call_args
+            headers = call_kwargs.kwargs.get(
+                "headers", call_kwargs[1].get("headers", {})
+            )
+            assert settings.WEBHOOK_HEADER_TIMESTAMP not in headers
+            assert settings.WEBHOOK_HEADER_SIGNATURE not in headers
+
+    @pytest.mark.asyncio
+    async def test_webhook_with_secret_sends_signature(self):
+        """Webhook with secret includes signature and timestamp headers."""
+        app = _make_app(mode="webhook", webhook_url="https://example.com/hook")
+        app.webhook_secret = "my-secret-key"
+        thread = _make_thread()
+
+        mock_result = RunResult(reply_text="OK", source="webhook", pending=False)
+
+        with patch("app.services.orchestrator.WebhookClient") as mock_cls:
+            mock_instance = AsyncMock()
+            mock_instance.send_sync.return_value = mock_result
+            mock_cls.return_value = mock_instance
+
+            await ChatOrchestrator.run(app, thread, "Hello")
+
+            call_kwargs = mock_instance.send_sync.call_args
+            headers = call_kwargs.kwargs.get(
+                "headers", call_kwargs[1].get("headers", {})
+            )
+            assert settings.WEBHOOK_HEADER_TIMESTAMP in headers
+            assert settings.WEBHOOK_HEADER_SIGNATURE in headers
+            assert headers[settings.WEBHOOK_HEADER_SIGNATURE].startswith("sha256=")
 
     @pytest.mark.asyncio
     async def test_webhook_mode_no_url_falls_back_to_simulator(self):
@@ -191,7 +241,7 @@ class TestChatOrchestratorStream:
         thread = _make_thread()
 
         async def fake_sse(*args, **kwargs):
-            yield b"event: delta\ndata: {\"text\": \"Hi\"}\n\n"
+            yield b'event: delta\ndata: {"text": "Hi"}\n\n'
             yield b"event: done\ndata: {}\n\n"
 
         with patch("app.services.orchestrator.WebhookClient") as mock_cls:
@@ -208,6 +258,55 @@ class TestChatOrchestratorStream:
         # Remaining events are raw proxied bytes
         raw_events = [e for e in events if e["event"] == "raw"]
         assert len(raw_events) == 2
+
+    @pytest.mark.asyncio
+    async def test_stream_webhook_without_secret_no_signature(self):
+        """Streaming webhook without secret sends no signature headers."""
+        app = _make_app(mode="webhook", webhook_url="https://example.com/hook")
+        app.webhook_secret = None
+        thread = _make_thread()
+
+        captured_headers = {}
+
+        async def capturing_sse(*args, **kwargs):
+            captured_headers.update(kwargs.get("headers", {}))
+            yield b"event: done\ndata: {}\n\n"
+
+        with patch("app.services.orchestrator.WebhookClient") as mock_cls:
+            mock_instance = MagicMock()
+            mock_instance.send_stream = capturing_sse
+            mock_cls.return_value = mock_instance
+
+            async for _ in ChatOrchestrator.run_stream(app, thread, "Hello"):
+                pass
+
+        assert settings.WEBHOOK_HEADER_TIMESTAMP not in captured_headers
+        assert settings.WEBHOOK_HEADER_SIGNATURE not in captured_headers
+
+    @pytest.mark.asyncio
+    async def test_stream_webhook_with_secret_sends_signature(self):
+        """Streaming webhook with secret includes signature headers."""
+        app = _make_app(mode="webhook", webhook_url="https://example.com/hook")
+        app.webhook_secret = "stream-secret-key"
+        thread = _make_thread()
+
+        captured_headers = {}
+
+        async def capturing_sse(*args, **kwargs):
+            captured_headers.update(kwargs.get("headers", {}))
+            yield b"event: done\ndata: {}\n\n"
+
+        with patch("app.services.orchestrator.WebhookClient") as mock_cls:
+            mock_instance = MagicMock()
+            mock_instance.send_stream = capturing_sse
+            mock_cls.return_value = mock_instance
+
+            async for _ in ChatOrchestrator.run_stream(app, thread, "Hello"):
+                pass
+
+        assert settings.WEBHOOK_HEADER_TIMESTAMP in captured_headers
+        assert settings.WEBHOOK_HEADER_SIGNATURE in captured_headers
+        assert captured_headers[settings.WEBHOOK_HEADER_SIGNATURE].startswith("sha256=")
 
     @pytest.mark.asyncio
     async def test_stream_webhook_no_url_falls_back_to_simulator(self):

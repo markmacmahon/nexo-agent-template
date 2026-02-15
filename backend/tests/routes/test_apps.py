@@ -285,3 +285,159 @@ class TestApps:
         data = response.json()
         assert data["config_json"] == {}
         assert data["webhook_url"] is None
+
+
+class TestAppSecretMasking:
+    """Test that webhook_secret is properly masked in all API responses."""
+
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_create_app_with_secret_returns_masked(
+        self, test_client, authenticated_user
+    ):
+        """Creating an app with webhook_secret returns masked value."""
+        response = await test_client.post(
+            "/apps/",
+            json={
+                "name": "Secret App",
+                "description": "Has a secret",
+                "webhook_secret": "real-secret-abc123",
+            },
+            headers=authenticated_user["headers"],
+        )
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["webhook_secret"] == "••••••"
+
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_get_app_with_secret_returns_masked(
+        self, test_client, db_session, authenticated_user
+    ):
+        """Getting an app with webhook_secret returns masked value."""
+        # Create with secret
+        create_resp = await test_client.post(
+            "/apps/",
+            json={
+                "name": "Get Secret App",
+                "webhook_secret": "get-test-secret-xyz",
+            },
+            headers=authenticated_user["headers"],
+        )
+        app_id = create_resp.json()["id"]
+
+        # Fetch it
+        response = await test_client.get(
+            f"/apps/{app_id}",
+            headers=authenticated_user["headers"],
+        )
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["webhook_secret"] == "••••••"
+
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_update_app_with_secret_returns_masked(
+        self, test_client, db_session, authenticated_user
+    ):
+        """Updating an app's webhook_secret returns masked value."""
+        # Create without secret
+        create_resp = await test_client.post(
+            "/apps/",
+            json={"name": "Update Secret App"},
+            headers=authenticated_user["headers"],
+        )
+        app_id = create_resp.json()["id"]
+        assert create_resp.json()["webhook_secret"] is None
+
+        # Update with secret
+        response = await test_client.patch(
+            f"/apps/{app_id}",
+            json={"webhook_secret": "new-secret-for-update"},
+            headers=authenticated_user["headers"],
+        )
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["webhook_secret"] == "••••••"
+
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_list_apps_with_secret_returns_masked(
+        self, test_client, db_session, authenticated_user
+    ):
+        """Listing apps masks webhook_secret for each app."""
+        # Create app with secret
+        await test_client.post(
+            "/apps/",
+            json={
+                "name": "Listed Secret App",
+                "webhook_secret": "listed-secret",
+            },
+            headers=authenticated_user["headers"],
+        )
+
+        response = await test_client.get(
+            "/apps/",
+            headers=authenticated_user["headers"],
+        )
+        assert response.status_code == status.HTTP_200_OK
+        items = response.json()["items"]
+        secret_apps = [a for a in items if a["name"] == "Listed Secret App"]
+        assert len(secret_apps) == 1
+        assert secret_apps[0]["webhook_secret"] == "••••••"
+
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_app_without_secret_returns_null(
+        self, test_client, authenticated_user
+    ):
+        """App without webhook_secret returns null (not masked)."""
+        response = await test_client.post(
+            "/apps/",
+            json={"name": "No Secret App"},
+            headers=authenticated_user["headers"],
+        )
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["webhook_secret"] is None
+
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_clear_secret_returns_null(
+        self, test_client, db_session, authenticated_user
+    ):
+        """Setting webhook_secret to null clears it."""
+        # Create with secret
+        create_resp = await test_client.post(
+            "/apps/",
+            json={
+                "name": "Clear Secret App",
+                "webhook_secret": "will-be-cleared",
+            },
+            headers=authenticated_user["headers"],
+        )
+        app_id = create_resp.json()["id"]
+        assert create_resp.json()["webhook_secret"] == "••••••"
+
+        # Clear secret
+        response = await test_client.patch(
+            f"/apps/{app_id}",
+            json={"webhook_secret": None},
+            headers=authenticated_user["headers"],
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["webhook_secret"] is None
+
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_secret_persists_in_database(
+        self, test_client, db_session, authenticated_user
+    ):
+        """The real secret is stored in the DB, not the masked value."""
+        create_resp = await test_client.post(
+            "/apps/",
+            json={
+                "name": "Persisted Secret App",
+                "webhook_secret": "real-persisted-secret-value",
+            },
+            headers=authenticated_user["headers"],
+        )
+        app_id = create_resp.json()["id"]
+
+        # Verify in database directly
+        result = await db_session.execute(select(App).where(App.id == app_id))
+        db_app = result.scalar()
+        assert db_app.webhook_secret == "real-persisted-secret-value"
