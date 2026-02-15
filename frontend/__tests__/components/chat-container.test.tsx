@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { ChatContainer } from "@/components/chat-container";
 import * as chatActions from "../../components/actions/chat-actions";
@@ -11,6 +11,7 @@ const mockResizeObserver = jest.fn().mockImplementation(() => ({
 }));
 beforeAll(() => {
   global.ResizeObserver = mockResizeObserver;
+  Element.prototype.scrollTo = jest.fn();
 });
 afterAll(() => {
   delete (global as unknown as { ResizeObserver?: unknown }).ResizeObserver;
@@ -39,38 +40,62 @@ jest.mock("../../components/breadcrumb-context", () => ({
   }),
 }));
 
+function mockCreateNewThreadResponse(thread: {
+  id: string;
+  app_id: string;
+  title: string | null;
+  status: "active" | "archived" | "deleted";
+  customer_id: string | null;
+  created_at: string;
+  updated_at: string;
+}) {
+  const initial_message = {
+    id: "msg-greeting-1",
+    thread_id: thread.id,
+    seq: 1,
+    role: "assistant" as const,
+    content: "Hello there! How can I help you today?",
+    content_json: {},
+    created_at: thread.created_at,
+  };
+  return {
+    data: { thread, initial_message },
+  };
+}
+
 describe("ChatContainer", () => {
-  it("shows New conversation at top of list when New conversation button is clicked", () => {
+  it("creates a thread and shows greeting when New conversation is clicked", async () => {
+    const newThread = {
+      id: "thread-new-1",
+      app_id: "app-1",
+      title: null,
+      status: "active" as const,
+      customer_id: "customer-123",
+      created_at: "2024-01-15T12:00:00Z",
+      updated_at: "2024-01-15T12:00:00Z",
+    };
+    jest
+      .mocked(chatActions.createNewThread)
+      .mockResolvedValueOnce(mockCreateNewThreadResponse(newThread));
+
     render(
       <ChatContainer appId="app-1" appName="Test App" initialThreads={[]} />,
     );
 
+    const newConvButton = screen.getByTitle("New conversation");
+    fireEvent.click(newConvButton);
     expect(
-      screen.queryByTestId("thread-list-new-conversation"),
-    ).not.toBeInTheDocument();
+      await screen.findByText("Hello there! How can I help you today?"),
+    ).toBeInTheDocument();
 
-    const newConvButton = screen.getByTitle("New conversation");
-    fireEvent.click(newConvButton);
-
-    const newConvRow = screen.getByTestId("thread-list-new-conversation");
-    expect(newConvRow).toBeInTheDocument();
-    expect(newConvRow).toHaveTextContent(/new conversation/i);
-  });
-
-  it("does not duplicate New conversation when button clicked again", () => {
-    render(
-      <ChatContainer appId="app-1" appName="Test App" initialThreads={[]} />,
+    expect(chatActions.createNewThread).toHaveBeenCalledWith(
+      "app-1",
+      expect.stringMatching(/^customer-\d+-[a-z0-9]+$/),
+      "",
     );
-
-    const newConvButton = screen.getByTitle("New conversation");
-    fireEvent.click(newConvButton);
-    fireEvent.click(newConvButton);
-
-    const placeholders = screen.getAllByTestId("thread-list-new-conversation");
-    expect(placeholders).toHaveLength(1);
   });
 
-  it("shows New conversation at top above existing threads when clicked", () => {
+  it("adds new thread at top of list when New conversation is clicked", async () => {
     const existingThreads = [
       {
         id: "thread-1",
@@ -82,6 +107,18 @@ describe("ChatContainer", () => {
         updated_at: "2024-01-15T10:30:00Z",
       },
     ];
+    const newThread = {
+      id: "thread-new-1",
+      app_id: "app-1",
+      title: null,
+      status: "active" as const,
+      customer_id: "customer-123",
+      created_at: "2024-01-15T12:00:00Z",
+      updated_at: "2024-01-15T12:00:00Z",
+    };
+    jest
+      .mocked(chatActions.createNewThread)
+      .mockResolvedValueOnce(mockCreateNewThreadResponse(newThread));
 
     render(
       <ChatContainer
@@ -93,56 +130,46 @@ describe("ChatContainer", () => {
 
     const newConvButton = screen.getByTitle("New conversation");
     fireEvent.click(newConvButton);
-
-    const newConvRow = screen.getByTestId("thread-list-new-conversation");
-    const listContainer = newConvRow.parentElement;
-    const listRows = Array.from(listContainer!.children).filter(
-      (el) => el.getAttribute("role") === "button",
-    );
-    expect(listRows[0]).toBe(newConvRow);
+    expect(
+      await screen.findByText("Hello there! How can I help you today?"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Existing chat")).toBeInTheDocument();
   });
 
-  it("persists thread when user edits and saves New conversation title", async () => {
-    const newThread = {
-      id: "thread-new-1",
-      app_id: "app-1",
-      title: "My new chat",
-      status: "active" as const,
-      customer_id: "customer-123",
-      created_at: "2024-01-15T12:00:00Z",
-      updated_at: "2024-01-15T12:00:00Z",
-    };
+  it("creates a new thread on each New conversation click", async () => {
     jest
       .mocked(chatActions.createNewThread)
-      .mockResolvedValueOnce({ data: newThread });
+      .mockResolvedValueOnce(
+        mockCreateNewThreadResponse({
+          id: "thread-1",
+          app_id: "app-1",
+          title: null,
+          status: "active" as const,
+          customer_id: null,
+          created_at: "2024-01-15T10:00:00Z",
+          updated_at: "2024-01-15T10:00:00Z",
+        }),
+      )
+      .mockResolvedValueOnce(
+        mockCreateNewThreadResponse({
+          id: "thread-2",
+          app_id: "app-1",
+          title: null,
+          status: "active" as const,
+          customer_id: null,
+          created_at: "2024-01-15T10:01:00Z",
+          updated_at: "2024-01-15T10:01:00Z",
+        }),
+      );
 
     render(
       <ChatContainer appId="app-1" appName="Test App" initialThreads={[]} />,
     );
-    const newConvButton = screen.getByTitle("New conversation");
-    fireEvent.click(newConvButton);
-    expect(
-      screen.getByTestId("thread-list-new-conversation"),
-    ).toBeInTheDocument();
 
-    const header = screen.getByTestId("chat-header");
-    const headerTitle = within(header).getByText(/new conversation/i);
-    fireEvent.click(headerTitle);
-    const input = within(header).getByRole("textbox", {
-      name: /click to edit/i,
-    });
-    fireEvent.change(input, { target: { value: "My new chat" } });
-    fireEvent.keyDown(input, { key: "Enter" });
+    fireEvent.click(screen.getByTitle("New conversation"));
+    await screen.findByText("Hello there! How can I help you today?");
 
-    await within(screen.getByTestId("chat-header")).findByText("My new chat");
-    expect(chatActions.createNewThread).toHaveBeenCalledWith(
-      "app-1",
-      expect.stringMatching(/^customer-\d+-[a-z0-9]+$/),
-      "My new chat",
-    );
-    expect(
-      screen.queryByTestId("thread-list-new-conversation"),
-    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTitle("New conversation"));
+    expect(chatActions.createNewThread).toHaveBeenCalledTimes(2);
   });
 });

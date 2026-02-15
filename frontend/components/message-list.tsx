@@ -9,12 +9,19 @@ import { t } from "@/i18n/keys";
 interface MessageListProps {
   messages: MessageRead[];
   streamingText?: string;
+  /** When true, we're loading messages for the selected thread — don't show the greeting placeholder. */
+  messagesLoading?: boolean;
 }
 
-export function MessageList({ messages, streamingText }: MessageListProps) {
+export function MessageList({
+  messages,
+  streamingText,
+  messagesLoading = false,
+}: MessageListProps) {
   const { containerRef, endRef, isAtBottom, scrollToBottom } = useScroll();
 
-  const hasMessages = messages.length > 0 || streamingText;
+  const hasMessages = messages.length > 0 || !!streamingText;
+  const showGreeting = !hasMessages && !messagesLoading;
 
   return (
     <div className="relative flex-1">
@@ -23,8 +30,8 @@ export function MessageList({ messages, streamingText }: MessageListProps) {
         className="absolute inset-0 touch-pan-y overflow-y-auto"
       >
         <div className="mx-auto flex min-w-0 max-w-4xl flex-col gap-4 px-2 py-4 md:gap-6 md:px-4">
-          {/* Greeting / empty state — shown for both simulator scenarios when no messages */}
-          {!hasMessages && (
+          {/* Greeting / empty state — only when we have no messages and we're not loading */}
+          {showGreeting && (
             <div
               data-testid="chat-greeting"
               className="mx-auto mt-4 flex size-full max-w-3xl flex-col justify-center px-4 md:mt-16 md:px-8"
@@ -34,6 +41,18 @@ export function MessageList({ messages, streamingText }: MessageListProps) {
               </p>
               <p className="text-xl text-muted-foreground md:text-2xl">
                 {t("CHAT_GREETING_SUBTITLE")}
+              </p>
+            </div>
+          )}
+
+          {/* Loading messages for selected thread */}
+          {messagesLoading && !hasMessages && (
+            <div
+              data-testid="chat-messages-loading"
+              className="mx-auto mt-4 flex size-full max-w-3xl flex-col justify-center px-4 md:mt-16 md:px-8"
+            >
+              <p className="text-lg text-muted-foreground">
+                {t("CHAT_LOADING_MESSAGES")}
               </p>
             </div>
           )}

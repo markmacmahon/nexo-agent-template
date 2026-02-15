@@ -32,13 +32,32 @@ async def test_create_thread(
 
     assert response.status_code == 200
     data = response.json()
-    assert data["title"] == "Test Thread"
-    assert data["customer_id"] == "user123"
-    assert data["status"] == "active"
-    assert data["app_id"] == app_id
-    assert "id" in data
-    assert "created_at" in data
-    assert "updated_at" in data
+    thread = data["thread"]
+    initial_message = data["initial_message"]
+
+    assert thread["title"] == "Test Thread"
+    assert thread["customer_id"] == "user123"
+    assert thread["status"] == "active"
+    assert thread["app_id"] == app_id
+    assert "id" in thread
+    assert "created_at" in thread
+    assert "updated_at" in thread
+
+    # Greeting returned instantly so UI can show it without a second request
+    assert initial_message["role"] == "assistant"
+    assert initial_message["content"] == "Hello there! How can I help you today?"
+    assert initial_message["thread_id"] == thread["id"]
+
+    # Greeting is persisted as first message
+    thread_id = thread["id"]
+    messages_response = await test_client.get(
+        f"/apps/{app_id}/threads/{thread_id}/messages",
+        headers=authenticated_user["headers"],
+    )
+    assert messages_response.status_code == 200
+    messages = messages_response.json()
+    assert len(messages) == 1
+    assert messages[0]["content"] == initial_message["content"]
 
 
 @pytest.mark.asyncio
@@ -105,7 +124,7 @@ async def test_list_threads(
             json={"title": f"Thread {i}", "customer_id": f"user{i}"},
             headers=authenticated_user["headers"],
         )
-        thread_ids.append(response.json()["id"])
+        thread_ids.append(response.json()["thread"]["id"])
 
     # List threads
     response = await test_client.get(
@@ -179,7 +198,7 @@ async def test_get_thread(
         json={"title": "Test Thread"},
         headers=authenticated_user["headers"],
     )
-    thread_id = thread_response.json()["id"]
+    thread_id = thread_response.json()["thread"]["id"]
 
     # Get thread
     response = await test_client.get(
@@ -210,7 +229,7 @@ async def test_update_thread(
         json={"title": "Original Title"},
         headers=authenticated_user["headers"],
     )
-    thread_id = thread_response.json()["id"]
+    thread_id = thread_response.json()["thread"]["id"]
 
     # Update thread
     response = await test_client.patch(
@@ -242,7 +261,7 @@ async def test_delete_thread(
         json={"title": "Thread to Delete"},
         headers=authenticated_user["headers"],
     )
-    thread_id = thread_response.json()["id"]
+    thread_id = thread_response.json()["thread"]["id"]
 
     # Delete thread
     response = await test_client.delete(

@@ -95,6 +95,7 @@ export function MessageInput({
           className="grow resize-none border-0 bg-transparent p-2 text-base shadow-none outline-none ring-0 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           rows={1}
           style={{ minHeight: "44px", maxHeight: "200px" }}
+          data-testid="chat-message-input"
         />
 
         <div className="flex items-center justify-end pt-1">

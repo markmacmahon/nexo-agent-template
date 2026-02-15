@@ -98,6 +98,7 @@ const messages = {
   // ── Backend error keys (returned as raw keys from API) ────────
   ERROR_INTERNAL: "Internal server error",
   ERROR_APP_NOT_FOUND: "App not found or not authorized",
+  ERROR_SUBSCRIBER_NOT_FOUND: "Subscriber not found",
   ERROR_THREAD_NOT_FOUND: "Thread not found or not authorized",
   ERROR_MESSAGE_NOT_FOUND: "Message not found or not authorized",
   ERROR_NO_USER_MESSAGES: "No user messages in thread",
@@ -213,10 +214,27 @@ const messages = {
   CHAT_DEFAULT_TITLE: "Chat",
   CHAT_PLACEHOLDER: "Send a message...",
   CHAT_PLACEHOLDER_STREAMING: "Waiting for response...",
+  CHAT_LOADING_MESSAGES: "Loading conversation…",
   CHAT_NO_CONVERSATIONS: "No conversations yet.",
   CHAT_START_BELOW: "Start chatting below.",
   CHAT_TITLE_CLICK_TO_EDIT: "Click to edit",
   CHAT_TITLE_PLACEHOLDER: "Conversation title",
+
+  // ── Subscribers ─────────────────────────────────────────────────
+  SUBSCRIBERS_PAGE_TITLE: "Subscribers",
+  SUBSCRIBERS_LIST_TITLE: "Subscribers",
+  SUBSCRIBERS_THREADS_TITLE: "Threads",
+  SUBSCRIBERS_SEARCH_PLACEHOLDER: "Search subscribers...",
+  SUBSCRIBERS_NO_SUBSCRIBERS: "No subscribers yet",
+  SUBSCRIBERS_NO_SUBSCRIBERS_DESCRIPTION:
+    "Once customers interact with your app, they'll appear here.",
+  SUBSCRIBERS_NO_THREADS: "No threads yet for this subscriber",
+  SUBSCRIBERS_SELECT_SUBSCRIBER: "Select a subscriber to view their threads",
+  SUBSCRIBERS_SELECT_THREAD: "Select a thread to view the conversation",
+  SUBSCRIBERS_NEW_THREAD: "New Thread",
+  SUBSCRIBERS_LOADING: "Loading...",
+  SUBSCRIBERS_LOAD_MORE: "Load More",
+  SUBSCRIBERS_NAV_LINK: "Subscribers",
 
   // ── Pagination ──────────────────────────────────────────────────
   PAGINATION_ITEMS_PER_PAGE: "Items per page:",
@@ -226,6 +244,8 @@ const messages = {
   ERROR_FETCH_APPS: "Failed to fetch apps",
   ERROR_FETCH_APP: "Failed to fetch app",
   ERROR_FETCH_THREADS: "Failed to fetch threads",
+  ERROR_FETCH_SUBSCRIBERS: "Failed to fetch subscribers",
+  ERROR_FETCH_SUBSCRIBER_THREADS: "Failed to fetch subscriber threads",
   ERROR_CREATE_THREAD: "Failed to create thread",
   ERROR_SEND_MESSAGE: "Failed to send message",
   ERROR_FETCH_MESSAGES: "Failed to fetch messages",

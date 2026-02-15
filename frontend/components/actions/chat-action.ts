@@ -76,7 +76,7 @@ export async function startThread(
       return { error: t("ERROR_NO_DATA") };
     }
 
-    return { data };
+    return { data: data.thread };
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : t("ERROR_CREATE_THREAD"),

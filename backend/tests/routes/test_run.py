@@ -24,7 +24,7 @@ async def _create_app_and_thread(
         headers=headers,
     )
     assert thread_resp.status_code == 200
-    thread_id = thread_resp.json()["id"]
+    thread_id = thread_resp.json()["thread"]["id"]
 
     return app_id, thread_id
 
@@ -66,7 +66,7 @@ async def test_run_sync_simulator_mode(
     assert data["assistant_message"] is not None
     assert data["assistant_message"]["role"] == "assistant"
     assert data["assistant_message"]["content"] is not None
-    assert data["assistant_message"]["seq"] == 2  # user was seq 1
+    assert data["assistant_message"]["seq"] == 3  # greeting=1, user=2, assistant=3
 
 
 @pytest.mark.asyncio
@@ -80,14 +80,15 @@ async def test_run_sync_persists_assistant_message(
 
     await test_client.post(f"/apps/{app_id}/threads/{thread_id}/run", headers=headers)
 
-    # Verify message is persisted
+    # Verify message is persisted (greeting + user + assistant)
     msgs_resp = await test_client.get(
         f"/apps/{app_id}/threads/{thread_id}/messages", headers=headers
     )
     messages = msgs_resp.json()
-    assert len(messages) == 2
-    assert messages[0]["role"] == "user"
-    assert messages[1]["role"] == "assistant"
+    assert len(messages) == 3
+    assert messages[0]["role"] == "assistant"  # greeting
+    assert messages[1]["role"] == "user"
+    assert messages[2]["role"] == "assistant"
 
 
 @pytest.mark.asyncio
@@ -188,13 +189,13 @@ async def test_stream_persists_assistant_message(
         f"/apps/{app_id}/threads/{thread_id}/run/stream", headers=headers
     )
 
-    # Verify message is persisted
+    # Verify message is persisted (greeting + user + assistant)
     msgs_resp = await test_client.get(
         f"/apps/{app_id}/threads/{thread_id}/messages", headers=headers
     )
     messages = msgs_resp.json()
-    assert len(messages) == 2
-    assert messages[1]["role"] == "assistant"
+    assert len(messages) == 3
+    assert messages[2]["role"] == "assistant"
 
 
 def _parse_sse(text: str) -> list[dict]:

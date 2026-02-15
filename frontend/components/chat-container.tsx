@@ -33,10 +33,8 @@ export function ChatContainer({
   const [threads, setThreads] = useState<ThreadRead[]>(initialThreads);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<MessageRead[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  /** When true, show a "New conversation" row at top of list (not persisted until first message). Only one allowed. */
-  const [hasNewConversationPlaceholder, setHasNewConversationPlaceholder] =
-    useState(false);
   const { setPageTitle, setExtraSegments } = usePageTitle();
 
   const { streamingText, status, startStream, stopStream } = useChatStream({
@@ -77,16 +75,22 @@ export function ChatContainer({
     async function loadMessages() {
       if (!selectedThreadId) {
         setMessages([]);
+        setMessagesLoading(false);
         return;
       }
+
+      setMessagesLoading(true);
+      setMessages([]);
 
       const result = await fetchMessages(appId, selectedThreadId, 100);
       if ("error" in result) {
         console.error("Failed to fetch messages:", result.error);
+        setMessagesLoading(false);
         return;
       }
 
       setMessages(result.data);
+      setMessagesLoading(false);
     }
 
     loadMessages();
@@ -96,7 +100,7 @@ export function ChatContainer({
     async (content: string) => {
       let threadId = selectedThreadId;
 
-      // Auto-create thread if none selected (persist the "New conversation" placeholder)
+      // Auto-create thread if none selected (backend returns thread + greeting)
       if (!threadId) {
         const customerId = `customer-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
         const threadResult = await createNewThread(
@@ -110,10 +114,11 @@ export function ChatContainer({
           return;
         }
 
-        threadId = threadResult.data.id;
-        setThreads((prev) => [threadResult.data, ...prev]);
+        const { thread, initial_message } = threadResult.data;
+        threadId = thread.id;
+        setThreads((prev) => [thread, ...prev]);
         setSelectedThreadId(threadId);
-        setHasNewConversationPlaceholder(false);
+        setMessages([initial_message]);
       }
 
       // Send user message
@@ -134,13 +139,22 @@ export function ChatContainer({
     [appId, selectedThreadId, startStream],
   );
 
-  const handleNewConversation = () => {
-    setSelectedThreadId(null);
-    setMessages([]);
-    if (!hasNewConversationPlaceholder) {
-      setHasNewConversationPlaceholder(true);
+  /** Default UI: create thread immediately so greeting is the clear entry point (no user message). */
+  const handleNewConversation = useCallback(async () => {
+    const customerId = `customer-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const threadResult = await createNewThread(appId, customerId, "");
+    if ("error" in threadResult) {
+      console.error("Failed to create thread:", threadResult.error);
+      return;
     }
-  };
+    const { thread, initial_message } = threadResult.data;
+    setThreads((prev) => [thread, ...prev]);
+    setSelectedThreadId(thread.id);
+    setMessages([initial_message]);
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  }, [appId]);
 
   const handleThreadTitleChange = useCallback(
     async (threadId: string, newTitle: string) => {
@@ -154,27 +168,6 @@ export function ChatContainer({
       );
     },
     [],
-  );
-
-  /** Persist "New conversation" by creating a thread with the given title (editing title = interaction). */
-  const handleNewConversationTitleSave = useCallback(
-    async (title: string) => {
-      if (!title.trim()) return;
-      const customerId = `customer-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      const threadResult = await createNewThread(
-        appId,
-        customerId,
-        title.trim(),
-      );
-      if ("error" in threadResult) {
-        console.error("Failed to create thread:", threadResult.error);
-        return;
-      }
-      setThreads((prev) => [threadResult.data, ...prev]);
-      setSelectedThreadId(threadResult.data.id);
-      setHasNewConversationPlaceholder(false);
-    },
-    [appId],
   );
 
   const isStreaming = status === "streaming";
@@ -222,6 +215,7 @@ export function ChatContainer({
               className="h-7 w-7 shrink-0"
               onClick={handleNewConversation}
               title={t("CHAT_NEW_CONVERSATION")}
+              data-testid="chat-new-conversation-button"
             >
               <PlusIcon className="h-4 w-4" />
             </Button>
@@ -231,7 +225,6 @@ export function ChatContainer({
           <ThreadList
             threads={threads}
             selectedThreadId={selectedThreadId}
-            showNewConversationAtTop={hasNewConversationPlaceholder}
             onThreadSelect={(id) => {
               setSelectedThreadId(id);
               if (typeof window !== "undefined" && window.innerWidth < 768) {
@@ -282,7 +275,10 @@ export function ChatContainer({
           {(!isSidebarOpen || typeof window !== "undefined") && (
             <div className="min-w-0 flex-1 flex items-center">
               {selectedThread ? (
-                <h1 className="min-w-0 flex-1 text-sm font-medium">
+                <h1
+                  className="min-w-0 flex-1 text-sm font-medium"
+                  data-testid="chat-header-title"
+                >
                   <EditableTitle
                     value={selectedThread.title ?? ""}
                     placeholder={t("CHAT_DEFAULT_TITLE")}
@@ -292,17 +288,11 @@ export function ChatContainer({
                     className="truncate"
                   />
                 </h1>
-              ) : hasNewConversationPlaceholder ? (
-                <h1 className="min-w-0 flex-1 text-sm font-medium text-muted-foreground">
-                  <EditableTitle
-                    value=""
-                    placeholder={t("CHAT_NEW_CONVERSATION")}
-                    onSave={handleNewConversationTitleSave}
-                    className="truncate"
-                  />
-                </h1>
               ) : (
-                <h1 className="text-sm font-medium text-muted-foreground">
+                <h1
+                  className="text-sm font-medium text-muted-foreground"
+                  data-testid="chat-header-title"
+                >
                   {t("CHAT_NEW_CONVERSATION")}
                 </h1>
               )}
@@ -322,7 +312,11 @@ export function ChatContainer({
         </header>
 
         {/* Messages — fills remaining space */}
-        <MessageList messages={messages} streamingText={streamingText} />
+        <MessageList
+          messages={messages}
+          streamingText={streamingText}
+          messagesLoading={messagesLoading}
+        />
 
         {/* Input — pinned to bottom */}
         <MessageInput

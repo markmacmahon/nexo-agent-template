@@ -56,7 +56,7 @@ describe("ThreadList", () => {
     expect(onThreadSelect).toHaveBeenCalledWith("thread-2");
   });
 
-  it("renders empty state when no threads and no placeholder", () => {
+  it("renders empty state when no threads", () => {
     render(
       <ThreadList
         threads={[]}
@@ -67,80 +67,5 @@ describe("ThreadList", () => {
     );
 
     expect(screen.getByText(/no conversations yet/i)).toBeInTheDocument();
-  });
-
-  it("shows New conversation at top when showNewConversationAtTop is true and no threads", () => {
-    render(
-      <ThreadList
-        threads={[]}
-        selectedThreadId={null}
-        showNewConversationAtTop={true}
-        onThreadSelect={jest.fn()}
-        onThreadTitleChange={jest.fn()}
-      />,
-    );
-
-    expect(
-      screen.getByTestId("thread-list-new-conversation"),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/new conversation/i)).toBeInTheDocument();
-    expect(screen.queryByText(/no conversations yet/i)).not.toBeInTheDocument();
-  });
-
-  it("shows New conversation at top then existing threads when showNewConversationAtTop", () => {
-    render(
-      <ThreadList
-        threads={mockThreads}
-        selectedThreadId={null}
-        showNewConversationAtTop={true}
-        onThreadSelect={jest.fn()}
-        onThreadTitleChange={jest.fn()}
-      />,
-    );
-
-    const newConvRow = screen.getByTestId("thread-list-new-conversation");
-    expect(newConvRow).toHaveTextContent(/new conversation/i);
-    // List order: new conversation first, then threads (thread rows are div[role=button], not inner buttons)
-    const listContainer = newConvRow.parentElement;
-    expect(listContainer).not.toBeNull();
-    const listRows = Array.from(listContainer!.children).filter(
-      (el) => el.getAttribute("role") === "button",
-    );
-    expect(listRows.length).toBe(3);
-    expect(listRows[0]).toBe(newConvRow);
-    expect(listRows[1]).toHaveTextContent("Customer Support #1");
-    expect(listRows[2]).toHaveTextContent("Sales Inquiry #2");
-  });
-
-  it("calls onThreadSelect(null) when New conversation row is clicked", () => {
-    const onThreadSelect = jest.fn();
-
-    render(
-      <ThreadList
-        threads={[]}
-        selectedThreadId={null}
-        showNewConversationAtTop={true}
-        onThreadSelect={onThreadSelect}
-        onThreadTitleChange={jest.fn()}
-      />,
-    );
-
-    fireEvent.click(screen.getByTestId("thread-list-new-conversation"));
-    expect(onThreadSelect).toHaveBeenCalledWith(null);
-  });
-
-  it("highlights New conversation row when selectedThreadId is null and placeholder shown", () => {
-    render(
-      <ThreadList
-        threads={mockThreads}
-        selectedThreadId={null}
-        showNewConversationAtTop={true}
-        onThreadSelect={jest.fn()}
-        onThreadTitleChange={jest.fn()}
-      />,
-    );
-
-    const newConvRow = screen.getByTestId("thread-list-new-conversation");
-    expect(newConvRow).toHaveClass("bg-accent");
   });
 });

@@ -32,6 +32,7 @@ No feature work without this cycle.
 
 **Definition of done:**
 - Tests added/updated and all passing
+- **For changes that affect user-facing flows** (chat, auth, navigation, critical UI): run `make test-e2e` and fix any failures before considering the work complete.
 - Lint + format clean (`make precommit`) - **only run when ready to commit**
 - No dead/debug code
 - Types correct (Python + TypeScript strict)
@@ -50,7 +51,7 @@ When implementing changes:
 1. Propose the smallest failing test.
 2. Implement minimal passing code.
 3. Refactor for clarity and modularity.
-4. Run tests frequently during development (`make test-backend` or `make test-frontend`).
+4. Run tests frequently during development (`make test-backend` or `make test-frontend`). For changes that touch chat, auth, or other critical user flows, run `make test-e2e` before considering the work complete.
 5. **Apply the boyscout rule**: if you discover bugs, test failures, or issues during your work, fix them immediately unless explicitly told to skip them.
 6. Run `make precommit` only once when feature is complete and ready to commit.
 7. Summarize changes briefly (why + impact).

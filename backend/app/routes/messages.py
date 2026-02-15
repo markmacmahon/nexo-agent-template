@@ -148,10 +148,11 @@ async def create_assistant_message(
     user: User = Depends(current_active_user),
 ):
     """
-    Create an assistant message (for dashboard simulation).
+    Create an agent message (for partner/dashboard replies).
 
-    This allows the business owner to manually reply as the assistant
-    through the dashboard UI.
+    This allows the business owner (partner) to manually reply as the agent
+    through the dashboard UI. The message is created with role="agent" and
+    content_json.source="dashboard_agent" for proper attribution.
     """
     # Get thread with lock to ensure atomic seq allocation
     thread = await get_thread_with_lock(thread_id, app_id, db, user)
@@ -161,12 +162,17 @@ async def create_assistant_message(
     thread.next_seq += 1
     thread.updated_at = datetime.now(timezone.utc)
 
-    # Create message with role="assistant"
+    # Merge content_json with source metadata
+    content_json = message.content_json.copy() if message.content_json else {}
+    content_json["source"] = "dashboard_agent"
+
+    # Create message with role="agent" (or "assistant" for compatibility)
     db_message = Message(
         thread_id=thread_id,
         seq=allocated_seq,
-        role="assistant",
-        **message.model_dump(),
+        role="assistant",  # Keep as "assistant" for OpenAI compatibility
+        content=message.content,
+        content_json=content_json,
     )
 
     db.add(db_message)

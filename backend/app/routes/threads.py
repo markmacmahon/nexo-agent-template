@@ -9,8 +9,16 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from app.database import User, get_async_session
+from app.i18n import t
 from app.models import App, Thread
-from app.schemas import ThreadRead, ThreadCreate, ThreadUpdate
+from app.schemas import (
+    ThreadRead,
+    ThreadCreate,
+    ThreadUpdate,
+    ThreadCreateResponse,
+    MessageRead,
+)
+from app.services.message_service import persist_assistant_message
 from app.users import current_active_user
 
 router = APIRouter(tags=["threads"])
@@ -57,14 +65,19 @@ def transform_threads(threads):
     return [ThreadRead.model_validate(thread) for thread in threads]
 
 
-@router.post("/apps/{app_id}/threads", response_model=ThreadRead)
+@router.post("/apps/{app_id}/threads", response_model=ThreadCreateResponse)
 async def create_thread(
     app_id: UUID,
     thread: ThreadCreate,
     db: AsyncSession = Depends(get_async_session),
     user: User = Depends(current_active_user),
 ):
-    """Create a new thread for the specified app."""
+    """Create a new thread for the specified app.
+
+    When no user message is provided (default), the backend adds an initial
+    assistant greeting as the clear entry point. The greeting is returned
+    in the response so the UI can show it instantly without a second request.
+    """
     # Verify app ownership
     await get_app_by_id(app_id, db, user)
 
@@ -73,7 +86,17 @@ async def create_thread(
     db.add(db_thread)
     await db.commit()
     await db.refresh(db_thread)
-    return db_thread
+
+    # Initial greeting when no user message: streamed back in response for instant display
+    greeting_msg = await persist_assistant_message(
+        db_thread, t("SIM_GREETING"), db, content_json={"source": "system"}
+    )
+    await db.refresh(db_thread)
+
+    return ThreadCreateResponse(
+        thread=ThreadRead.model_validate(db_thread),
+        initial_message=MessageRead.model_validate(greeting_msg),
+    )
 
 
 @router.get("/apps/{app_id}/threads", response_model=Page[ThreadRead])

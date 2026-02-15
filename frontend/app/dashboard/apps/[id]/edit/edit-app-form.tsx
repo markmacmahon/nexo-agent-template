@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Eye,
   EyeOff,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { t, translateError } from "@/i18n/keys";
@@ -406,11 +407,20 @@ export function EditAppForm({ app }: EditAppFormProps) {
                 </p>
               </div>
             </div>
-            <div className="pt-2">
+            <div className="pt-2 flex gap-2">
               <Link href={`/dashboard/apps/${app.id}/chat`}>
                 <Button type="button" variant="outline" className="gap-2">
                   <MessageSquare className="h-4 w-4" />
                   {t("SIM_TRY_CHAT")}
+                </Button>
+              </Link>
+              <Link
+                href={`/dashboard/apps/${app.id}/subscribers`}
+                data-testid="edit-app-subscribers-link"
+              >
+                <Button type="button" variant="outline" className="gap-2">
+                  <Users className="h-4 w-4" />
+                  {t("SUBSCRIBERS_NAV_LINK")}
                 </Button>
               </Link>
             </div>

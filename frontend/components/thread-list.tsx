@@ -9,8 +9,6 @@ import { EditableTitle } from "@/components/editable-title";
 interface ThreadListProps {
   threads: ThreadRead[];
   selectedThreadId: string | null;
-  /** When true, show a "New conversation" row at top (not persisted; only one allowed). */
-  showNewConversationAtTop?: boolean;
   onThreadSelect: (threadId: string | null) => void;
   onThreadTitleChange: (
     threadId: string,
@@ -21,11 +19,10 @@ interface ThreadListProps {
 export function ThreadList({
   threads,
   selectedThreadId,
-  showNewConversationAtTop = false,
   onThreadSelect,
   onThreadTitleChange,
 }: ThreadListProps) {
-  const showEmptyState = threads.length === 0 && !showNewConversationAtTop;
+  const showEmptyState = threads.length === 0;
 
   if (showEmptyState) {
     return (
@@ -43,31 +40,6 @@ export function ThreadList({
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="flex flex-col py-1">
-        {showNewConversationAtTop && (
-          <div
-            data-testid="thread-list-new-conversation"
-            role="button"
-            tabIndex={0}
-            onClick={() => onThreadSelect(null)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onThreadSelect(null);
-              }
-            }}
-            className={cn(
-              "mx-1.5 rounded-md px-3 py-2.5 text-left transition-colors cursor-pointer",
-              "hover:bg-accent/60",
-              selectedThreadId === null
-                ? "bg-accent text-accent-foreground"
-                : "text-foreground",
-            )}
-          >
-            <div className="text-sm font-medium leading-snug text-muted-foreground">
-              {t("CHAT_NEW_CONVERSATION")}
-            </div>
-          </div>
-        )}
         {threads.map((thread) => (
           <div
             key={thread.id}

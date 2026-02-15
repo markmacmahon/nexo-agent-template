@@ -67,11 +67,19 @@ describe("MessageList", () => {
     expect(messages[2]).toHaveAttribute("data-role", "user");
   });
 
-  it("renders greeting state when no messages", () => {
+  it("renders greeting state when no messages and not loading", () => {
     render(<MessageList messages={[]} />);
 
     expect(screen.getByText(/hello there/i)).toBeInTheDocument();
     expect(screen.getByText(/how can i help you today/i)).toBeInTheDocument();
+  });
+
+  it("does not show greeting when loading messages for thread", () => {
+    render(<MessageList messages={[]} messagesLoading={true} />);
+
+    expect(screen.queryByTestId("chat-greeting")).not.toBeInTheDocument();
+    expect(screen.getByTestId("chat-messages-loading")).toBeInTheDocument();
+    expect(screen.getByText(/loading conversation/i)).toBeInTheDocument();
   });
 
   it("renders streaming text with cursor", () => {

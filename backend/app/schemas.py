@@ -1,10 +1,12 @@
 import uuid
 from datetime import datetime
-from typing import Literal, Any
+from typing import Literal, Any, TypeVar
 
 from fastapi_users import schemas
 from pydantic import BaseModel, Field, field_validator
 from uuid import UUID
+
+T = TypeVar("T")
 
 IntegrationMode = Literal["simulator", "webhook"]
 
@@ -192,5 +194,72 @@ class MessageRead(BaseModel):
     content: str | None = None
     content_json: dict
     created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ThreadCreateResponse(BaseModel):
+    """Response when creating a thread: thread plus initial greeting (when no user message)."""
+
+    thread: ThreadRead
+    initial_message: MessageRead
+
+
+# Subscriber schemas
+class SubscriberBase(BaseModel):
+    customer_id: str
+    display_name: str | None = None
+    metadata_json: dict[str, Any] = Field(default_factory=dict)
+
+
+class SubscriberCreate(SubscriberBase):
+    pass
+
+
+class SubscriberUpdate(BaseModel):
+    display_name: str | None = None
+    metadata_json: dict[str, Any] | None = None
+
+
+class SubscriberRead(SubscriberBase):
+    id: UUID
+    app_id: UUID
+    created_at: datetime
+    last_seen_at: datetime | None = None
+    last_message_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class SubscriberSummary(BaseModel):
+    """Subscriber summary with thread count for list views."""
+
+    id: UUID
+    app_id: UUID
+    customer_id: str
+    display_name: str | None = None
+    created_at: datetime
+    last_seen_at: datetime | None = None
+    last_message_at: datetime | None = None
+    thread_count: int = 0
+    last_message_preview: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class ThreadSummary(BaseModel):
+    """Thread summary with message count for list views."""
+
+    id: UUID
+    app_id: UUID
+    subscriber_id: UUID | None = None
+    title: str | None = None
+    status: Literal["active", "archived", "deleted"]
+    customer_id: str | None = None
+    created_at: datetime
+    updated_at: datetime
+    message_count: int = 0
+    last_message_at: datetime | None = None
+    last_message_preview: str | None = None
 
     model_config = {"from_attributes": True}

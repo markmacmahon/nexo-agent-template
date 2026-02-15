@@ -21,7 +21,7 @@ async def test_create_message(
         json={"title": "Test Thread"},
         headers=authenticated_user["headers"],
     )
-    thread_id = thread_response.json()["id"]
+    thread_id = thread_response.json()["thread"]["id"]
 
     # Create a message
     message_data = {
@@ -39,7 +39,7 @@ async def test_create_message(
     assert data["role"] == "user"
     assert data["content"] == "Hello, this is a test message"
     assert data["content_json"] == {"metadata": "test"}
-    assert data["seq"] == 1  # First message
+    assert data["seq"] == 2  # First user message (seq 1 is initial greeting)
     assert data["thread_id"] == thread_id
     assert "id" in data
     assert "created_at" in data
@@ -63,10 +63,11 @@ async def test_message_seq_increments(
         json={"title": "Test Thread"},
         headers=authenticated_user["headers"],
     )
-    thread_id = thread_response.json()["id"]
+    thread_id = thread_response.json()["thread"]["id"]
 
-    # Create multiple messages
-    for expected_seq in range(1, 6):
+    # Create multiple messages (seq 1 is initial greeting, so user messages start at 2)
+    for i in range(5):
+        expected_seq = i + 2
         response = await test_client.post(
             f"/apps/{app_id}/threads/{thread_id}/messages",
             json={"content": f"Message {expected_seq}"},
@@ -94,7 +95,7 @@ async def test_list_messages(
         json={"title": "Test Thread"},
         headers=authenticated_user["headers"],
     )
-    thread_id = thread_response.json()["id"]
+    thread_id = thread_response.json()["thread"]["id"]
 
     # Create messages
     for i in range(5):
@@ -112,11 +113,13 @@ async def test_list_messages(
 
     assert response.status_code == 200
     messages = response.json()
-    assert len(messages) == 5
-    # Verify order (ascending by seq)
-    for i, msg in enumerate(messages):
-        assert msg["seq"] == i + 1
-        assert msg["content"] == f"Message {i + 1}"
+    assert len(messages) == 6  # 1 initial greeting + 5 user messages
+    assert messages[0]["role"] == "assistant"
+    assert messages[0]["content"] == "Hello there! How can I help you today?"
+    assert messages[0]["seq"] == 1
+    for i in range(1, 6):
+        assert messages[i]["seq"] == i + 1
+        assert messages[i]["content"] == f"Message {i}"
 
 
 @pytest.mark.asyncio
@@ -137,9 +140,9 @@ async def test_list_messages_with_cursor_pagination(
         json={"title": "Test Thread"},
         headers=authenticated_user["headers"],
     )
-    thread_id = thread_response.json()["id"]
+    thread_id = thread_response.json()["thread"]["id"]
 
-    # Create 10 messages
+    # Create 10 user messages (thread already has 1 greeting at seq 1)
     for i in range(10):
         await test_client.post(
             f"/apps/{app_id}/threads/{thread_id}/messages",
@@ -148,8 +151,7 @@ async def test_list_messages_with_cursor_pagination(
         )
 
     # Get messages before seq 6 with limit 3
-    # This gets seq < 6, ordered asc, limit 3
-    # So we expect the last 3 messages before 6: messages 3, 4, 5
+    # Seq < 6 ordered asc limit 3 => first three: seq 1 (greeting), 2, 3
     response = await test_client.get(
         f"/apps/{app_id}/threads/{thread_id}/messages?before_seq=6&limit=3",
         headers=authenticated_user["headers"],
@@ -158,7 +160,6 @@ async def test_list_messages_with_cursor_pagination(
     assert response.status_code == 200
     messages = response.json()
     assert len(messages) == 3
-    # Messages with seq < 6, ordered asc, limit 3 gives us 1, 2, 3
     assert messages[0]["seq"] == 1
     assert messages[1]["seq"] == 2
     assert messages[2]["seq"] == 3
@@ -182,7 +183,7 @@ async def test_get_message(
         json={"title": "Test Thread"},
         headers=authenticated_user["headers"],
     )
-    thread_id = thread_response.json()["id"]
+    thread_id = thread_response.json()["thread"]["id"]
 
     message_response = await test_client.post(
         f"/apps/{app_id}/threads/{thread_id}/messages",
@@ -245,7 +246,7 @@ async def test_message_always_user_role(
         json={"title": "Test Thread"},
         headers=authenticated_user["headers"],
     )
-    thread_id = thread_response.json()["id"]
+    thread_id = thread_response.json()["thread"]["id"]
 
     # Create a user message (role is implicit)
     response = await test_client.post(
@@ -255,7 +256,7 @@ async def test_message_always_user_role(
     )
     assert response.status_code == 200
     assert response.json()["role"] == "user"
-    assert response.json()["seq"] == 1
+    assert response.json()["seq"] == 2  # seq 1 is initial greeting
 
 
 @pytest.mark.asyncio
@@ -276,15 +277,15 @@ async def test_create_assistant_message_for_simulation(
         json={"title": "Test Thread"},
         headers=authenticated_user["headers"],
     )
-    thread_id = thread_response.json()["id"]
+    thread_id = thread_response.json()["thread"]["id"]
 
-    # Customer sends message
+    # Customer sends message (seq 1 is initial greeting)
     user_msg = await test_client.post(
         f"/apps/{app_id}/threads/{thread_id}/messages",
         json={"content": "I need help!"},
         headers=authenticated_user["headers"],
     )
-    assert user_msg.json()["seq"] == 1
+    assert user_msg.json()["seq"] == 2
     assert user_msg.json()["role"] == "user"
 
     # Owner replies as assistant
@@ -294,15 +295,16 @@ async def test_create_assistant_message_for_simulation(
         headers=authenticated_user["headers"],
     )
     assert assistant_msg.status_code == 200
-    assert assistant_msg.json()["seq"] == 2
+    assert assistant_msg.json()["seq"] == 3
     assert assistant_msg.json()["role"] == "assistant"
     assert assistant_msg.json()["content"] == "Sure, how can I help?"
 
-    # Verify both messages are in thread
+    # Verify all three messages are in thread (greeting, user, assistant)
     messages = await test_client.get(
         f"/apps/{app_id}/threads/{thread_id}/messages",
         headers=authenticated_user["headers"],
     )
-    assert len(messages.json()) == 2
-    assert messages.json()[0]["role"] == "user"
-    assert messages.json()[1]["role"] == "assistant"
+    assert len(messages.json()) == 3
+    assert messages.json()[0]["role"] == "assistant"  # greeting
+    assert messages.json()[1]["role"] == "user"
+    assert messages.json()[2]["role"] == "assistant"

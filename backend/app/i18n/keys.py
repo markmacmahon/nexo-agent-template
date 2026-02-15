@@ -26,6 +26,7 @@ _MESSAGES: dict[str, str] = {
     "WEBHOOK_MISSING_REPLY": "Webhook response missing required 'reply' field",
     "WEBHOOK_BAD_CONTENT_TYPE": "Expected SSE (text/event-stream) but got '{content_type}'",
     # ── Simulator responses ─────────────────────────────────────────
+    "SIM_GREETING": "Hello there! How can I help you today?",
     "SIM_GENERIC_EMPTY": "I'm here to help. What can I do for you?",
     "SIM_GENERIC_ECHO": "Echo: {message}",
     "SIM_DISCLAIMER_PREFIX": "[Simulated] {reply}",

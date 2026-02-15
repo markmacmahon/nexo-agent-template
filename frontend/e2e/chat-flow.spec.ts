@@ -68,29 +68,40 @@ test.describe("Chat Flow", () => {
       await openFirstAppChat(page);
     });
 
-    await test.step("Greeting visible initially (both simulator scenarios)", async () => {
+    await test.step("Greeting visible (empty state or first message)", async () => {
       await page.waitForSelector('[data-testid="chat-container"]', {
         timeout: 10000,
       });
-      const greeting = page.locator('[data-testid="chat-greeting"]');
-      await expect(greeting).toBeVisible();
-      await expect(greeting).toContainText("Hello there!");
-      await expect(greeting).toContainText("How can I help you today?");
+      // Greeting appears either as empty-state UI or as first assistant message
+      const emptyStateGreeting = page.locator('[data-testid="chat-greeting"]');
+      const firstAssistantMessage = page
+        .locator('[data-testid="message-assistant"]')
+        .first();
+      await expect(emptyStateGreeting.or(firstAssistantMessage)).toBeVisible({
+        timeout: 5000,
+      });
+      await expect(
+        page.getByText("Hello there!", { exact: false }),
+      ).toBeVisible();
+      await expect(
+        page.getByText("How can I help you today?", { exact: false }),
+      ).toBeVisible();
     });
 
     await test.step("Send a test message", async () => {
-      const messageInput = page.locator('textarea[placeholder*="message"]');
+      const messageInput = page.getByTestId("chat-message-input");
       await expect(messageInput).toBeVisible();
       await messageInput.fill("Hello, this is a test message");
       await messageInput.press("Enter");
     });
 
     await test.step("Verify assistant response appears", async () => {
-      const assistantMessage = page.locator(
+      const assistantMessages = page.locator(
         '[data-testid="message-assistant"]',
       );
-      await expect(assistantMessage.first()).toBeVisible({ timeout: 15000 });
-      await expect(assistantMessage.first()).toContainText("Echo:", {
+      await expect(assistantMessages.first()).toBeVisible({ timeout: 15000 });
+      // First assistant message is greeting; the reply (Echo) is the last assistant message
+      await expect(assistantMessages.filter({ hasText: "Echo:" })).toBeVisible({
         timeout: 10000,
       });
     });
@@ -108,7 +119,7 @@ test.describe("Chat Flow", () => {
 
     await test.step("Sidebar visible by default", async () => {
       await expect(sidebarWrapper).toHaveAttribute("data-state", "open");
-      await expect(page.getByText("Conversations")).toBeVisible();
+      await expect(page.getByTestId("chat-sidebar-title")).toBeVisible();
     });
 
     await test.step("Close sidebar via toggle", async () => {
@@ -121,7 +132,7 @@ test.describe("Chat Flow", () => {
       await toggle.click();
       await page.waitForTimeout(400);
       await expect(sidebarWrapper).toHaveAttribute("data-state", "open");
-      await expect(page.getByText("Conversations")).toBeVisible();
+      await expect(page.getByTestId("chat-sidebar-title")).toBeVisible();
     });
   });
 
@@ -178,9 +189,11 @@ test.describe("Chat Flow", () => {
 
     await page.waitForSelector('[data-testid="chat-container"]');
 
-    await expect(page.locator("h1")).toContainText(/new conversation/i);
+    await expect(page.getByTestId("chat-header-title")).toContainText(
+      /new conversation/i,
+    );
 
-    const messageInput = page.locator('textarea[placeholder*="message"]');
+    const messageInput = page.getByTestId("chat-message-input");
     await messageInput.fill("Auto-create thread test");
     await messageInput.press("Enter");
 
@@ -190,7 +203,7 @@ test.describe("Chat Flow", () => {
     await expect(assistantMessage.first()).toBeVisible({ timeout: 15000 });
   });
 
-  test("New conversation: shows placeholder at top when + clicked, no duplicate", async ({
+  test("New conversation: + creates thread and greeting appears", async ({
     page,
   }) => {
     await login(page);
@@ -204,27 +217,26 @@ test.describe("Chat Flow", () => {
       "open",
     );
 
-    await test.step("Click New conversation (+): list shows one placeholder at top", async () => {
-      const newConvButton = page
-        .getByTestId("chat-sidebar-wrapper")
-        .getByTitle("New conversation");
+    await test.step("Click + : new thread created and greeting visible", async () => {
+      const newConvButton = page.getByTestId("chat-new-conversation-button");
       await newConvButton.click();
-      const placeholder = page.getByTestId("thread-list-new-conversation");
-      await expect(placeholder).toBeVisible();
-      await expect(placeholder).toContainText(/new conversation/i);
+      await expect(
+        page.getByText("Hello there! How can I help you today?"),
+      ).toBeVisible({ timeout: 10000 });
     });
 
-    await test.step("Click + again without sending: still only one placeholder", async () => {
-      const newConvButton = page
+    await test.step("Thread list shows the new thread (no placeholder)", async () => {
+      const threadRows = page
         .getByTestId("chat-sidebar-wrapper")
-        .getByTitle("New conversation");
-      await newConvButton.click();
-      const placeholders = page.getByTestId("thread-list-new-conversation");
-      await expect(placeholders).toHaveCount(1);
+        .locator("[role='button']");
+      await expect(threadRows.first()).toBeVisible();
+      await expect(
+        page.getByTestId("thread-list-new-conversation"),
+      ).toHaveCount(0);
     });
   });
 
-  test("New conversation: first message creates thread at top and placeholder is replaced", async ({
+  test("New conversation: send message in new thread gets streamed reply", async ({
     page,
   }) => {
     await login(page);
@@ -234,34 +246,25 @@ test.describe("Chat Flow", () => {
       timeout: 10000,
     });
 
-    await test.step("Click + to show New conversation placeholder", async () => {
-      await page
-        .getByTestId("chat-sidebar-wrapper")
-        .getByTitle("New conversation")
-        .click();
+    await test.step("Click + to create new thread with greeting", async () => {
+      await page.getByTestId("chat-new-conversation-button").click();
       await expect(
-        page.getByTestId("thread-list-new-conversation"),
-      ).toBeVisible();
+        page.getByText("Hello there! How can I help you today?"),
+      ).toBeVisible({ timeout: 10000 });
     });
 
-    await test.step("Send first message: placeholder replaced by real thread at top", async () => {
-      const messageInput = page.locator('textarea[placeholder*="message"]');
+    await test.step("Send message and get streamed reply", async () => {
+      const messageInput = page.getByTestId("chat-message-input");
       await messageInput.fill("First message in new conversation");
       await messageInput.press("Enter");
     });
 
-    await test.step("Assistant reply appears and thread list shows real thread", async () => {
-      await expect(
-        page.locator('[data-testid="message-assistant"]').first(),
-      ).toBeVisible({ timeout: 15000 });
-      await expect(
-        page.getByTestId("thread-list-new-conversation"),
-      ).toHaveCount(0);
-      await expect(
-        page
-          .locator('[data-testid="chat-sidebar-wrapper"] [role="button"]')
-          .first(),
-      ).toContainText(/new conversation|first message/i);
+    await test.step("Assistant reply appears", async () => {
+      const assistantMessages = page.locator(
+        '[data-testid="message-assistant"]',
+      );
+      await expect(assistantMessages.first()).toBeVisible({ timeout: 15000 });
+      await expect(assistantMessages).toHaveCount(2); // greeting + reply
     });
   });
 });

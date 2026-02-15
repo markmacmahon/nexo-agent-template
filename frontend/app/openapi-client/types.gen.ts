@@ -259,6 +259,32 @@ export type PageAppRead = {
 };
 
 /**
+ * Page[SubscriberSummary]
+ */
+export type PageSubscriberSummary = {
+  /**
+   * Items
+   */
+  items: Array<SubscriberSummary>;
+  /**
+   * Total
+   */
+  total?: number | null;
+  /**
+   * Page
+   */
+  page: number | null;
+  /**
+   * Size
+   */
+  size: number | null;
+  /**
+   * Pages
+   */
+  pages?: number | null;
+};
+
+/**
  * Page[ThreadRead]
  */
 export type PageThreadRead = {
@@ -266,6 +292,32 @@ export type PageThreadRead = {
    * Items
    */
   items: Array<ThreadRead>;
+  /**
+   * Total
+   */
+  total?: number | null;
+  /**
+   * Page
+   */
+  page: number | null;
+  /**
+   * Size
+   */
+  size: number | null;
+  /**
+   * Pages
+   */
+  pages?: number | null;
+};
+
+/**
+ * Page[ThreadSummary]
+ */
+export type PageThreadSummary = {
+  /**
+   * Items
+   */
+  items: Array<ThreadSummary>;
   /**
    * Total
    */
@@ -300,6 +352,90 @@ export type RunResponse = {
 };
 
 /**
+ * SubscriberRead
+ */
+export type SubscriberRead = {
+  /**
+   * Customer Id
+   */
+  customer_id: string;
+  /**
+   * Display Name
+   */
+  display_name?: string | null;
+  /**
+   * Metadata Json
+   */
+  metadata_json?: {
+    [key: string]: unknown;
+  };
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * App Id
+   */
+  app_id: string;
+  /**
+   * Created At
+   */
+  created_at: string;
+  /**
+   * Last Seen At
+   */
+  last_seen_at?: string | null;
+  /**
+   * Last Message At
+   */
+  last_message_at?: string | null;
+};
+
+/**
+ * SubscriberSummary
+ *
+ * Subscriber summary with thread count for list views.
+ */
+export type SubscriberSummary = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * App Id
+   */
+  app_id: string;
+  /**
+   * Customer Id
+   */
+  customer_id: string;
+  /**
+   * Display Name
+   */
+  display_name?: string | null;
+  /**
+   * Created At
+   */
+  created_at: string;
+  /**
+   * Last Seen At
+   */
+  last_seen_at?: string | null;
+  /**
+   * Last Message At
+   */
+  last_message_at?: string | null;
+  /**
+   * Thread Count
+   */
+  thread_count?: number;
+  /**
+   * Last Message Preview
+   */
+  last_message_preview?: string | null;
+};
+
+/**
  * ThreadCreate
  */
 export type ThreadCreate = {
@@ -311,6 +447,16 @@ export type ThreadCreate = {
    * Customer Id
    */
   customer_id?: string | null;
+};
+
+/**
+ * ThreadCreateResponse
+ *
+ * Response when creating a thread: thread plus initial greeting (when no user message).
+ */
+export type ThreadCreateResponse = {
+  thread: ThreadRead;
+  initial_message: MessageRead;
 };
 
 /**
@@ -345,6 +491,58 @@ export type ThreadRead = {
    * Updated At
    */
   updated_at: string;
+};
+
+/**
+ * ThreadSummary
+ *
+ * Thread summary with message count for list views.
+ */
+export type ThreadSummary = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * App Id
+   */
+  app_id: string;
+  /**
+   * Subscriber Id
+   */
+  subscriber_id?: string | null;
+  /**
+   * Title
+   */
+  title?: string | null;
+  /**
+   * Status
+   */
+  status: "active" | "archived" | "deleted";
+  /**
+   * Customer Id
+   */
+  customer_id?: string | null;
+  /**
+   * Created At
+   */
+  created_at: string;
+  /**
+   * Updated At
+   */
+  updated_at: string;
+  /**
+   * Message Count
+   */
+  message_count?: number;
+  /**
+   * Last Message At
+   */
+  last_message_at?: string | null;
+  /**
+   * Last Message Preview
+   */
+  last_message_preview?: string | null;
 };
 
 /**
@@ -1162,7 +1360,7 @@ export type CreateThreadResponses = {
   /**
    * Successful Response
    */
-  200: ThreadRead;
+  200: ThreadCreateResponse;
 };
 
 export type CreateThreadResponse =
@@ -1407,6 +1605,141 @@ export type GetMessageResponses = {
 };
 
 export type GetMessageResponse = GetMessageResponses[keyof GetMessageResponses];
+
+export type ListSubscribersData = {
+  body?: never;
+  path: {
+    /**
+     * App Id
+     */
+    app_id: string;
+  };
+  query?: {
+    /**
+     * Page
+     *
+     * Page number
+     */
+    page?: number;
+    /**
+     * Size
+     *
+     * Page size
+     */
+    size?: number;
+    /**
+     * Q
+     *
+     * Search customer_id and display_name
+     */
+    q?: string | null;
+  };
+  url: "/apps/{app_id}/subscribers";
+};
+
+export type ListSubscribersErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ListSubscribersError =
+  ListSubscribersErrors[keyof ListSubscribersErrors];
+
+export type ListSubscribersResponses = {
+  /**
+   * Successful Response
+   */
+  200: PageSubscriberSummary;
+};
+
+export type ListSubscribersResponse =
+  ListSubscribersResponses[keyof ListSubscribersResponses];
+
+export type GetSubscriberData = {
+  body?: never;
+  path: {
+    /**
+     * App Id
+     */
+    app_id: string;
+    /**
+     * Subscriber Id
+     */
+    subscriber_id: string;
+  };
+  query?: never;
+  url: "/apps/{app_id}/subscribers/{subscriber_id}";
+};
+
+export type GetSubscriberErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetSubscriberError = GetSubscriberErrors[keyof GetSubscriberErrors];
+
+export type GetSubscriberResponses = {
+  /**
+   * Successful Response
+   */
+  200: SubscriberRead;
+};
+
+export type GetSubscriberResponse =
+  GetSubscriberResponses[keyof GetSubscriberResponses];
+
+export type ListSubscriberThreadsData = {
+  body?: never;
+  path: {
+    /**
+     * App Id
+     */
+    app_id: string;
+    /**
+     * Subscriber Id
+     */
+    subscriber_id: string;
+  };
+  query?: {
+    /**
+     * Page
+     *
+     * Page number
+     */
+    page?: number;
+    /**
+     * Size
+     *
+     * Page size
+     */
+    size?: number;
+  };
+  url: "/apps/{app_id}/subscribers/{subscriber_id}/threads";
+};
+
+export type ListSubscriberThreadsErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ListSubscriberThreadsError =
+  ListSubscriberThreadsErrors[keyof ListSubscriberThreadsErrors];
+
+export type ListSubscriberThreadsResponses = {
+  /**
+   * Successful Response
+   */
+  200: PageThreadSummary;
+};
+
+export type ListSubscriberThreadsResponse =
+  ListSubscriberThreadsResponses[keyof ListSubscriberThreadsResponses];
 
 export type RunSyncData = {
   body?: never;

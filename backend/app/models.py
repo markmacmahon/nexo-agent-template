@@ -27,6 +27,34 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     apps = relationship("App", back_populates="user", cascade="all, delete-orphan")
 
 
+class Subscriber(Base):
+    __tablename__ = "subscribers"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    app_id = Column(
+        UUID(as_uuid=True), ForeignKey("apps.id", ondelete="CASCADE"), nullable=False
+    )
+    customer_id = Column(String, nullable=False)
+    display_name = Column(Text, nullable=True)
+    metadata_json = Column(JSONB, nullable=False, default=dict, server_default="{}")
+    created_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    last_seen_at = Column(DateTime(timezone=True), nullable=True)
+    last_message_at = Column(DateTime(timezone=True), nullable=True)
+
+    app = relationship("App", back_populates="subscribers")
+    threads = relationship("Thread", back_populates="subscriber")
+
+    __table_args__ = (
+        UniqueConstraint("app_id", "customer_id", name="uq_subscriber_app_customer"),
+        Index("ix_subscribers_app_last_seen", "app_id", "last_seen_at"),
+        Index("ix_subscribers_app_last_message", "app_id", "last_message_at"),
+    )
+
+
 class App(Base):
     __tablename__ = "apps"
 
@@ -40,6 +68,9 @@ class App(Base):
 
     user = relationship("User", back_populates="apps")
     threads = relationship("Thread", back_populates="app", cascade="all, delete-orphan")
+    subscribers = relationship(
+        "Subscriber", back_populates="app", cascade="all, delete-orphan"
+    )
 
 
 class Thread(Base):
@@ -48,6 +79,11 @@ class Thread(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     app_id = Column(
         UUID(as_uuid=True), ForeignKey("apps.id", ondelete="CASCADE"), nullable=False
+    )
+    subscriber_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("subscribers.id", ondelete="SET NULL"),
+        nullable=True,
     )
     title = Column(String, nullable=True)
     status = Column(
@@ -68,6 +104,7 @@ class Thread(Base):
     )
 
     app = relationship("App", back_populates="threads")
+    subscriber = relationship("Subscriber", back_populates="threads")
     messages = relationship(
         "Message",
         back_populates="thread",
@@ -78,6 +115,7 @@ class Thread(Base):
     __table_args__ = (
         Index("ix_threads_app_created", "app_id", "created_at"),
         Index("ix_threads_app_customer", "app_id", "customer_id"),
+        Index("ix_threads_subscriber", "subscriber_id"),
     )
 
 

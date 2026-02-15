@@ -2,19 +2,17 @@
 
 import json
 import logging
-from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.future import select
-
-from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.database import User, get_async_session, get_session_factory
 from app.models import App, Thread, Message
 from app.schemas import MessageRead, RunResponse
+from app.services.message_service import persist_assistant_message
 from app.services.orchestrator import ChatOrchestrator
 from app.users import current_active_user
 
@@ -73,33 +71,6 @@ async def _get_history(thread_id: UUID, db: AsyncSession) -> list[Message]:
     return messages
 
 
-async def _persist_assistant_message(
-    thread: Thread, content: str, db: AsyncSession, content_json: dict | None = None
-) -> Message:
-    """Create an assistant message with atomically allocated seq."""
-    # Re-fetch thread with lock for safe seq allocation
-    result = await db.execute(
-        select(Thread).filter(Thread.id == thread.id).with_for_update()
-    )
-    locked_thread = result.scalars().first()
-
-    allocated_seq = locked_thread.next_seq
-    locked_thread.next_seq += 1
-    locked_thread.updated_at = datetime.now(timezone.utc)
-
-    msg = Message(
-        thread_id=thread.id,
-        seq=allocated_seq,
-        role="assistant",
-        content=content,
-        content_json=content_json or {},
-    )
-    db.add(msg)
-    await db.commit()
-    await db.refresh(msg)
-    return msg
-
-
 # --- Sync endpoint ---
 
 
@@ -138,7 +109,9 @@ async def run_sync(
             content_json["reason"] = result.metadata["reason"]
 
     # Persist assistant message
-    msg = await _persist_assistant_message(thread, result.reply_text, db, content_json)
+    msg = await persist_assistant_message(
+        thread, result.reply_text, db, content_json=content_json
+    )
     return RunResponse(
         status="completed",
         assistant_message=MessageRead.model_validate(msg),
@@ -212,8 +185,8 @@ async def run_stream(
                         content_json["reason"] = reason
 
                     async with session_factory() as stream_db:
-                        msg = await _persist_assistant_message(
-                            thread, full_text, stream_db, content_json
+                        msg = await persist_assistant_message(
+                            thread, full_text, stream_db, content_json=content_json
                         )
                     yield _sse_event(
                         "done",

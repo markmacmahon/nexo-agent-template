@@ -38,12 +38,21 @@ import type {
   GetMessageData,
   GetMessageErrors,
   GetMessageResponses,
+  GetSubscriberData,
+  GetSubscriberErrors,
+  GetSubscriberResponses,
   GetThreadData,
   GetThreadErrors,
   GetThreadResponses,
   ListMessagesData,
   ListMessagesErrors,
   ListMessagesResponses,
+  ListSubscribersData,
+  ListSubscribersErrors,
+  ListSubscribersResponses,
+  ListSubscriberThreadsData,
+  ListSubscriberThreadsErrors,
+  ListSubscriberThreadsResponses,
   ListThreadsData,
   ListThreadsErrors,
   ListThreadsResponses,
@@ -439,6 +448,10 @@ export const listThreads = <ThrowOnError extends boolean = false>(
  * Create Thread
  *
  * Create a new thread for the specified app.
+ *
+ * When no user message is provided (default), the backend adds an initial
+ * assistant greeting as the clear entry point. The greeting is returned
+ * in the response so the UI can show it instantly without a second request.
  */
 export const createThread = <ThrowOnError extends boolean = false>(
   options: Options<CreateThreadData, ThrowOnError>,
@@ -567,10 +580,11 @@ export const createMessage = <ThrowOnError extends boolean = false>(
 /**
  * Create Assistant Message
  *
- * Create an assistant message (for dashboard simulation).
+ * Create an agent message (for partner/dashboard replies).
  *
- * This allows the business owner to manually reply as the assistant
- * through the dashboard UI.
+ * This allows the business owner (partner) to manually reply as the agent
+ * through the dashboard UI. The message is created with role="agent" and
+ * content_json.source="dashboard_agent" for proper attribution.
  */
 export const createAssistantMessage = <ThrowOnError extends boolean = false>(
   options: Options<CreateAssistantMessageData, ThrowOnError>,
@@ -604,6 +618,66 @@ export const getMessage = <ThrowOnError extends boolean = false>(
   >({
     security: [{ scheme: "bearer", type: "http" }],
     url: "/messages/{message_id}",
+    ...options,
+  });
+
+/**
+ * List Subscribers
+ *
+ * List subscribers for an app with pagination.
+ *
+ * Returns subscribers ordered by last_message_at DESC (most recent first),
+ * with thread count and optional last message preview.
+ */
+export const listSubscribers = <ThrowOnError extends boolean = false>(
+  options: Options<ListSubscribersData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    ListSubscribersResponses,
+    ListSubscribersErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/apps/{app_id}/subscribers",
+    ...options,
+  });
+
+/**
+ * Get Subscriber
+ *
+ * Get subscriber detail.
+ */
+export const getSubscriber = <ThrowOnError extends boolean = false>(
+  options: Options<GetSubscriberData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    GetSubscriberResponses,
+    GetSubscriberErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/apps/{app_id}/subscribers/{subscriber_id}",
+    ...options,
+  });
+
+/**
+ * List Subscriber Threads
+ *
+ * List threads for a subscriber with pagination.
+ *
+ * Returns threads ordered by updated_at DESC (most recent first),
+ * with message count and optional last message preview.
+ */
+export const listSubscriberThreads = <ThrowOnError extends boolean = false>(
+  options: Options<ListSubscriberThreadsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    ListSubscriberThreadsResponses,
+    ListSubscriberThreadsErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: "bearer", type: "http" }],
+    url: "/apps/{app_id}/subscribers/{subscriber_id}/threads",
     ...options,
   });
 
