@@ -1,72 +1,74 @@
 /**
  * Tests for useChatStream hook
  *
- * NOTE: EventSource is not natively supported in jsdom, so we need to mock it.
- * These tests verify the hook's behavior with mocked SSE events.
+ * The hook uses fetch() + ReadableStream for SSE, not EventSource.
+ * We mock fetch and document.cookie. Use a mock reader (no ReadableStream in jsdom).
  */
 
-import { renderHook, act } from "@testing-library/react";
+import { TextDecoder } from "util";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { useChatStream } from "@/hooks/use-chat-stream";
 
-// Mock EventSource
-class MockEventSource {
-  url: string;
-  listeners: Record<string, ((event: MessageEvent | Event) => void)[]> = {};
-  onerror: ((event: Event) => void) | null = null;
-  readyState = 0;
-
-  constructor(url: string) {
-    this.url = url;
-  }
-
-  addEventListener(
-    type: string,
-    listener: (event: MessageEvent | Event) => void,
-  ) {
-    if (!this.listeners[type]) {
-      this.listeners[type] = [];
-    }
-    this.listeners[type].push(listener);
-  }
-
-  dispatchEvent(event: MessageEvent | Event): boolean {
-    const type = event.type;
-    if (this.listeners[type]) {
-      this.listeners[type].forEach((listener) => listener(event));
-    }
-    return true;
-  }
-
-  close() {
-    this.readyState = 2; // CLOSED
-  }
+if (
+  typeof (global as unknown as { TextDecoder?: unknown }).TextDecoder ===
+  "undefined"
+) {
+  (global as unknown as { TextDecoder: typeof TextDecoder }).TextDecoder =
+    TextDecoder;
 }
 
-// Install mock
-(global as unknown as { EventSource: typeof MockEventSource }).EventSource =
-  MockEventSource;
+function encodeSSE(event: string, data: string): Uint8Array {
+  const s = `event: ${event}\ndata: ${data}\n\n`;
+  return new Uint8Array(Buffer.from(s, "utf-8"));
+}
+
+function createMockStreamReader(chunks: Uint8Array[]) {
+  let i = 0;
+  return {
+    read(): Promise<ReadableStreamReadResult<Uint8Array>> {
+      if (i >= chunks.length) {
+        return Promise.resolve({ done: true, value: undefined });
+      }
+      return Promise.resolve({ done: false, value: chunks[i++] });
+    },
+    releaseLock() {},
+  };
+}
 
 describe("useChatStream", () => {
-  let mockEventSource: MockEventSource | null = null;
+  let fetchMock: jest.SpyInstance;
+  let streamChunks: Uint8Array[];
 
   beforeEach(() => {
-    // Capture EventSource instance when created
-    const OriginalEventSource = MockEventSource;
-    (global as unknown as { EventSource: typeof MockEventSource }).EventSource =
-      class extends OriginalEventSource {
-        constructor(url: string) {
-          super(url);
-          // eslint-disable-next-line @typescript-eslint/no-this-alias
-          mockEventSource = this;
-        }
-      };
+    document.cookie = "accessToken=fake-token";
+    streamChunks = [encodeSSE("done", JSON.stringify({ status: "completed" }))];
+    if (
+      typeof (global as unknown as { fetch?: unknown }).fetch === "undefined"
+    ) {
+      (global as unknown as { fetch: unknown }).fetch = jest.fn();
+    }
+    fetchMock = jest.spyOn(global, "fetch").mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        body: {
+          getReader: () => createMockStreamReader(streamChunks),
+        },
+      } as unknown as Response),
+    );
   });
 
   afterEach(() => {
-    mockEventSource = null;
+    fetchMock?.mockRestore();
+    document.cookie = "";
   });
 
-  it("should handle connection errors without crashing", () => {
+  it("should handle connection errors without crashing", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+    } as Response);
+
     const onError = jest.fn();
     const { result } = renderHook(() =>
       useChatStream({
@@ -76,23 +78,20 @@ describe("useChatStream", () => {
       }),
     );
 
-    act(() => {
+    await act(async () => {
       result.current.startStream();
     });
 
-    expect(mockEventSource).not.toBeNull();
-
-    // Simulate connection error (no data)
-    act(() => {
-      const errorEvent = new Event("error");
-      mockEventSource!.onerror?.(errorEvent);
+    await waitFor(() => {
+      expect(result.current.status).toBe("error");
     });
-
-    expect(result.current.status).toBe("error");
-    expect(onError).toHaveBeenCalledWith("Connection to server failed");
+    expect(onError).toHaveBeenCalled();
   });
 
-  it("should handle custom error events with data", () => {
+  it("should handle custom error events with data", async () => {
+    streamChunks = [
+      encodeSSE("error", JSON.stringify({ message: "Backend error occurred" })),
+    ];
     const onError = jest.fn();
     const { result } = renderHook(() =>
       useChatStream({
@@ -102,58 +101,29 @@ describe("useChatStream", () => {
       }),
     );
 
-    act(() => {
+    await act(async () => {
       result.current.startStream();
     });
 
-    // Simulate custom error event with JSON data
-    act(() => {
-      const errorEvent = new MessageEvent("error", {
-        data: JSON.stringify({ message: "Backend error occurred" }),
-      });
-      mockEventSource!.dispatchEvent(errorEvent);
+    await waitFor(() => {
+      expect(result.current.status).toBe("error");
     });
-
-    expect(result.current.status).toBe("error");
     expect(onError).toHaveBeenCalledWith("Backend error occurred");
   });
 
-  it("should accumulate streaming text from delta events", () => {
-    const { result } = renderHook(() =>
-      useChatStream({
-        appId: "test-app",
-        threadId: "test-thread",
-      }),
-    );
-
-    act(() => {
-      result.current.startStream();
-    });
-
-    expect(result.current.status).toBe("streaming");
-    expect(result.current.streamingText).toBe("");
-
-    // Send delta events
-    act(() => {
-      const delta1 = new MessageEvent("delta", {
-        data: JSON.stringify({ text: "Hello" }),
-      });
-      mockEventSource!.dispatchEvent(delta1);
-    });
-
-    expect(result.current.streamingText).toBe("Hello");
-
-    act(() => {
-      const delta2 = new MessageEvent("delta", {
-        data: JSON.stringify({ text: " World" }),
-      });
-      mockEventSource!.dispatchEvent(delta2);
-    });
-
-    expect(result.current.streamingText).toBe("Hello World");
-  });
-
-  it("should call onMessageComplete when done event received", () => {
+  it("should accumulate streaming text from delta events", async () => {
+    streamChunks = [
+      encodeSSE("delta", JSON.stringify({ text: "Hello" })),
+      encodeSSE("delta", JSON.stringify({ text: " World" })),
+      encodeSSE(
+        "done",
+        JSON.stringify({
+          status: "completed",
+          message_id: "msg-accum",
+          seq: 1,
+        }),
+      ),
+    ];
     const onMessageComplete = jest.fn();
     const { result } = renderHook(() =>
       useChatStream({
@@ -163,31 +133,48 @@ describe("useChatStream", () => {
       }),
     );
 
-    act(() => {
+    await act(async () => {
       result.current.startStream();
     });
 
-    // Send delta events
-    act(() => {
-      const delta = new MessageEvent("delta", {
-        data: JSON.stringify({ text: "Test message" }),
-      });
-      mockEventSource!.dispatchEvent(delta);
-    });
+    expect(result.current.status).toBe("idle");
+    expect(onMessageComplete).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "msg-accum",
+        content: "Hello World",
+        role: "assistant",
+      }),
+    );
+  });
 
-    // Send done event
-    act(() => {
-      const done = new MessageEvent("done", {
-        data: JSON.stringify({
+  it("should call onMessageComplete when done event received", async () => {
+    streamChunks = [
+      encodeSSE("delta", JSON.stringify({ text: "Test message" })),
+      encodeSSE(
+        "done",
+        JSON.stringify({
           status: "completed",
           message_id: "msg-123",
           seq: 1,
         }),
-      });
-      mockEventSource!.dispatchEvent(done);
+      ),
+    ];
+    const onMessageComplete = jest.fn();
+    const { result } = renderHook(() =>
+      useChatStream({
+        appId: "test-app",
+        threadId: "test-thread",
+        onMessageComplete,
+      }),
+    );
+
+    await act(async () => {
+      result.current.startStream();
     });
 
-    expect(result.current.status).toBe("idle");
+    await waitFor(() => {
+      expect(result.current.status).toBe("idle");
+    });
     expect(onMessageComplete).toHaveBeenCalledWith(
       expect.objectContaining({
         id: "msg-123",
@@ -197,7 +184,11 @@ describe("useChatStream", () => {
     );
   });
 
-  it("should handle meta events without crashing", () => {
+  it("should handle meta events without crashing", async () => {
+    streamChunks = [
+      encodeSSE("meta", JSON.stringify({ source: "simulator" })),
+      encodeSSE("done", JSON.stringify({ status: "completed" })),
+    ];
     const { result } = renderHook(() =>
       useChatStream({
         appId: "test-app",
@@ -209,19 +200,15 @@ describe("useChatStream", () => {
       result.current.startStream();
     });
 
-    // Send meta event
-    act(() => {
-      const meta = new MessageEvent("meta", {
-        data: JSON.stringify({ source: "simulator" }),
-      });
-      mockEventSource!.dispatchEvent(meta);
+    await waitFor(() => {
+      expect(result.current.status).toBe("streaming");
     });
-
-    // Should not crash, status should still be streaming
-    expect(result.current.status).toBe("streaming");
+    await waitFor(() => {
+      expect(result.current.status).toBe("idle");
+    });
   });
 
-  it("should construct correct EventSource URL", () => {
+  it("should construct correct fetch URL", async () => {
     const { result } = renderHook(() =>
       useChatStream({
         appId: "app-123",
@@ -233,8 +220,23 @@ describe("useChatStream", () => {
       result.current.startStream();
     });
 
-    expect(mockEventSource?.url).toBe(
-      "/api/chat/stream?appId=app-123&threadId=thread-456",
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled();
+    });
+
+    const callUrl = fetchMock.mock.calls[0][0] as string;
+    expect(callUrl).toMatch(
+      /\/apps\/app-123\/threads\/thread-456\/run\/stream$/,
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      callUrl,
+      expect.objectContaining({
+        method: "GET",
+        headers: expect.objectContaining({
+          Accept: "text/event-stream",
+          Authorization: "Bearer fake-token",
+        }),
+      }),
     );
   });
 });

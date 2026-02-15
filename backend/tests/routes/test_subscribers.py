@@ -40,9 +40,7 @@ class TestSubscribers:
         assert response.status_code == 401
 
     @pytest.mark.asyncio(loop_scope="function")
-    async def test_list_subscribers_wrong_app(
-        self, test_client, authenticated_user
-    ):
+    async def test_list_subscribers_wrong_app(self, test_client, authenticated_user):
         """Test listing subscribers for non-existent app."""
         fake_app_id = "00000000-0000-0000-0000-000000000000"
         response = await test_client.get(

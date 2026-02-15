@@ -111,40 +111,50 @@ make docker-start-frontend
 - **Backend API:** http://localhost:8000
 - **API Documentation:** http://localhost:8000/docs
 
-## GitHub Actions Configuration
+## GitHub Actions (CI)
 
-To run CI/CD pipelines in GitHub Actions, configure these secrets in your repository settings (Settings → Secrets and variables → Actions):
+The CI workflow runs backend and frontend tests with **sensible defaults**; no repository secrets are required for CI.
 
-### Required Secrets
+- **Backend:** Uses the default test database URL. The workflow starts a Postgres service and sets `TEST_DATABASE_URL` so tests run against it.
+- **Frontend:** Uses default build and test settings; no environment variables are set in CI.
 
-| Secret Name | Description | Example Value |
-|------------|-------------|---------------|
-| `DATABASE_URL` | PostgreSQL connection string for production | `postgresql+asyncpg://user:pass@host:5432/agents_db` |
-| `TEST_DATABASE_URL` | PostgreSQL connection string for tests | `postgresql+asyncpg://postgres:password@localhost:5433/agents_test_db` |
-| `ACCESS_SECRET_KEY` | JWT access token secret (generate with command below) | `a1b2c3d4...` (64 chars) |
-| `RESET_PASSWORD_SECRET_KEY` | Password reset token secret (generate with command below) | `e5f6g7h8...` (64 chars) |
-| `VERIFICATION_SECRET_KEY` | Email verification token secret (generate with command below) | `i9j0k1l2...` (64 chars) |
-| `CORS_ORIGINS` | Allowed CORS origins (comma-separated) | `https://yourdomain.com,https://app.yourdomain.com` |
-| `OPENAPI_OUTPUT_FILE` | Path for OpenAPI schema output (backend: relative to backend/, frontend: relative to frontend/) | Backend: `../local-shared-data/openapi.json`, Frontend: `../local-shared-data/openapi.json` |
+If you add workflows that deploy (e.g. to Vercel or a Python host), configure the environment variables described in [Deployment](#deployment) as GitHub Secrets or in your deployment platform.
 
-### Generating Secret Keys
+## Environment variables for deployment
 
-Use this command to generate secure random keys:
+Most options have good defaults for local development. The following matter when you deploy the **Next.js app** (e.g. Vercel) or the **Python API** (e.g. Railway, Render, or any app server).
+
+### Next.js (e.g. Vercel)
+
+Set these in your Next.js project (Vercel: Project → Settings → Environment Variables):
+
+| Variable | Required | Description | Default (local) |
+|----------|----------|-------------|-----------------|
+| `NEXT_PUBLIC_API_BASE_URL` | Yes (production) | Backend API URL used by the browser (e.g. chat stream). | `http://localhost:8000` |
+| `API_BASE_URL` | Yes (production) | Backend API URL used by the Next.js server (API client). | `http://localhost:8000` |
+
+In production, set both to your backend URL (e.g. `https://api.yourdomain.com`). For local dev, the app falls back to `http://localhost:8000` where applicable.
+
+### Python backend (e.g. Railway, Render, Docker)
+
+Set these on the process that runs the FastAPI app (e.g. host env vars or Docker):
+
+| Variable | Required | Description | Default (local) |
+|----------|----------|-------------|-----------------|
+| `DATABASE_URL` | Yes (production) | PostgreSQL connection string. | `postgresql+asyncpg://postgres:password@localhost:5432/agents_db` |
+| `ACCESS_SECRET_KEY` | Yes (production) | JWT access token secret (min 32 chars). | Dev default; **must** override in production. |
+| `RESET_PASSWORD_SECRET_KEY` | Yes (production) | Password reset token secret. | Dev default; **must** override in production. |
+| `VERIFICATION_SECRET_KEY` | Yes (production) | Email verification token secret. | Dev default; **must** override in production. |
+| `CORS_ORIGINS` | Yes (production) | Allowed origins (set format depends on host). | `http://localhost:3000`, `http://localhost:8000` |
+| `FRONTEND_URL` | Recommended | Frontend base URL (e.g. for password reset links). | `http://localhost:3000` |
+
+Generate secure secret keys (run three times for the three keys):
 
 ```bash
 python3 -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-Run this three times to generate the three required secret keys.
-
-### Setting Secrets in GitHub
-
-1. Go to your repository on GitHub
-2. Navigate to **Settings** → **Secrets and variables** → **Actions**
-3. Click **New repository secret**
-4. Add each secret with the exact name from the table above
-
-**Note:** The `GITHUB_TOKEN` secret is automatically provided by GitHub Actions and doesn't need to be configured.
+Optional for production: `MAIL_*` (SMTP), `OPENAPI_OUTPUT_FILE`, `OPENAPI_URL`, webhook header names. See `backend/.env.example` and `backend/app/config.py` for all options.
 
 ## Development Tips
 
@@ -263,7 +273,8 @@ Access the email inbox at http://localhost:8025
 
 ## Deployment
 
-Both frontend and backend can be deployed to Vercel. Configure the environment variables listed in the [GitHub Actions Configuration](#github-actions-configuration) section in your Vercel project settings.
+- **Frontend (Next.js):** Deploy to Vercel or any Node.js host. Set [Next.js environment variables](#nextjs-eg-vercel) (e.g. `NEXT_PUBLIC_API_BASE_URL` and `API_BASE_URL`) to your backend URL.
+- **Backend (FastAPI):** Deploy to Railway, Render, a Docker host, or any Python app server. Set [Python backend environment variables](#python-backend-eg-railway-render-docker) (database URL, secret keys, CORS, frontend URL). Database is hosted separately (e.g. Railway, Supabase).
 
 ## Chat Interface
 

@@ -1,13 +1,10 @@
 from uuid import UUID
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Query
-from fastapi_pagination import Page, Params
-from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi_pagination import Page
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func, desc
-from sqlalchemy.orm import selectinload
 
 from app.database import User, get_async_session
 from app.dependencies import get_app_or_404, get_subscriber_in_app_or_404
@@ -41,12 +38,15 @@ async def list_subscribers(
     await get_app_or_404(app_id, db, user)
 
     # Build query
-    query = select(
-        Subscriber,
-        func.count(Thread.id).label("thread_count"),
-    ).outerjoin(Thread, Thread.subscriber_id == Subscriber.id).filter(
-        Subscriber.app_id == app_id
-    ).group_by(Subscriber.id)
+    query = (
+        select(
+            Subscriber,
+            func.count(Thread.id).label("thread_count"),
+        )
+        .outerjoin(Thread, Thread.subscriber_id == Subscriber.id)
+        .filter(Subscriber.app_id == app_id)
+        .group_by(Subscriber.id)
+    )
 
     # Apply search filter
     if q:
@@ -62,8 +62,6 @@ async def list_subscribers(
         desc(Subscriber.created_at),
         desc(Subscriber.id),
     )
-
-    params = Params(page=page, size=size)
 
     # Execute query
     result = await db.execute(query)
@@ -103,9 +101,7 @@ async def list_subscribers(
     )
 
 
-@router.get(
-    "/apps/{app_id}/subscribers/{subscriber_id}", response_model=SubscriberRead
-)
+@router.get("/apps/{app_id}/subscribers/{subscriber_id}", response_model=SubscriberRead)
 async def get_subscriber(
     app_id: UUID,
     subscriber_id: UUID,
@@ -118,7 +114,8 @@ async def get_subscriber(
 
 
 @router.get(
-    "/apps/{app_id}/subscribers/{subscriber_id}/threads", response_model=Page[ThreadSummary]
+    "/apps/{app_id}/subscribers/{subscriber_id}/threads",
+    response_model=Page[ThreadSummary],
 )
 async def list_subscriber_threads(
     app_id: UUID,
@@ -138,16 +135,20 @@ async def list_subscriber_threads(
     await get_subscriber_in_app_or_404(app_id, subscriber_id, db, user)
 
     # Build query
-    query = select(
-        Thread,
-        func.count(Message.id).label("message_count"),
-        func.max(Message.created_at).label("last_message_at"),
-    ).outerjoin(Message, Message.thread_id == Thread.id).filter(
-        Thread.app_id == app_id,
-        Thread.subscriber_id == subscriber_id,
-    ).group_by(Thread.id).order_by(desc(Thread.updated_at))
-
-    params = Params(page=page, size=size)
+    query = (
+        select(
+            Thread,
+            func.count(Message.id).label("message_count"),
+            func.max(Message.created_at).label("last_message_at"),
+        )
+        .outerjoin(Message, Message.thread_id == Thread.id)
+        .filter(
+            Thread.app_id == app_id,
+            Thread.subscriber_id == subscriber_id,
+        )
+        .group_by(Thread.id)
+        .order_by(desc(Thread.updated_at))
+    )
 
     # Execute query
     result = await db.execute(query)
