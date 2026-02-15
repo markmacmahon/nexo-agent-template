@@ -1,34 +1,39 @@
 import { z } from "zod";
+import { t } from "@/i18n/keys";
 
 const passwordSchema = z
   .string()
-  .min(8, "Password should be at least 8 characters.") // Minimum length validation
+  .min(8, t("FORM_VALIDATION_PASSWORD_MIN"))
   .refine((password) => /[A-Z]/.test(password), {
-    message: "Password should contain at least one uppercase letter.",
-  }) // At least one uppercase letter
+    message: t("FORM_VALIDATION_PASSWORD_UPPERCASE"),
+  })
   .refine((password) => /[!@#$%^&*(),.?":{}|<>]/.test(password), {
-    message: "Password should contain at least one special character.",
+    message: t("FORM_VALIDATION_PASSWORD_SPECIAL"),
   });
 
 export const passwordResetConfirmSchema = z
   .object({
     password: passwordSchema,
     passwordConfirm: z.string(),
-    token: z.string({ message: "Token is required" }),
+    token: z.string({ message: t("FORM_VALIDATION_TOKEN_REQUIRED") }),
   })
   .refine((data) => data.password === data.passwordConfirm, {
-    message: "Passwords must match.",
+    message: t("FORM_VALIDATION_PASSWORDS_MATCH"),
     path: ["passwordConfirm"],
   });
 
 export const registerSchema = z.object({
   password: passwordSchema,
-  email: z.string().email({ message: "Invalid email address" }),
+  email: z.string().email({ message: t("FORM_VALIDATION_EMAIL_INVALID") }),
 });
 
 export const loginSchema = z.object({
-  password: z.string().min(1, { message: "Password is required" }),
-  username: z.string().min(1, { message: "Username is required" }),
+  password: z
+    .string()
+    .min(1, { message: t("FORM_VALIDATION_PASSWORD_REQUIRED") }),
+  username: z
+    .string()
+    .min(1, { message: t("FORM_VALIDATION_USERNAME_REQUIRED") }),
 });
 
 export const integrationModes = ["simulator", "webhook"] as const;
@@ -36,15 +41,17 @@ export const integrationModes = ["simulator", "webhook"] as const;
 export type IntegrationMode = (typeof integrationModes)[number];
 
 export const appSchema = z.object({
-  name: z.string().min(1, { message: "Name is required" }),
-  description: z.string().min(1, { message: "Description is required" }),
+  name: z.string().min(1, { message: t("FORM_VALIDATION_NAME_REQUIRED") }),
+  description: z
+    .string()
+    .min(1, { message: t("FORM_VALIDATION_DESCRIPTION_REQUIRED") }),
   integration_mode: z
-    .enum(integrationModes, { message: "Invalid integration mode" })
+    .enum(integrationModes, { message: t("FORM_VALIDATION_INTEGRATION_MODE") })
     .default("simulator"),
   webhook_url: z
     .string()
     .refine((val) => val === "" || /^https?:\/\//.test(val), {
-      message: "Webhook URL must start with http:// or https://",
+      message: t("FORM_VALIDATION_WEBHOOK_URL"),
     })
     .default(""),
 });

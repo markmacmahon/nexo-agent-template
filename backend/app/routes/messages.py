@@ -32,9 +32,7 @@ async def get_thread_with_lock(
     thread = result.scalars().first()
 
     if not thread:
-        raise HTTPException(
-            status_code=404, detail="Thread not found or not authorized"
-        )
+        raise HTTPException(status_code=404, detail="ERROR_THREAD_NOT_FOUND")
 
     return thread
 
@@ -56,9 +54,7 @@ async def get_thread_by_id(
     thread = result.scalars().first()
 
     if not thread:
-        raise HTTPException(
-            status_code=404, detail="Thread not found or not authorized"
-        )
+        raise HTTPException(status_code=404, detail="ERROR_THREAD_NOT_FOUND")
 
     return thread
 
@@ -196,8 +192,6 @@ async def get_message(
     message = result.scalars().first()
 
     if not message:
-        raise HTTPException(
-            status_code=404, detail="Message not found or not authorized"
-        )
+        raise HTTPException(status_code=404, detail="ERROR_MESSAGE_NOT_FOUND")
 
     return message

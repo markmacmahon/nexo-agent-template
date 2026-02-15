@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Bot, Github } from "lucide-react";
+import { t } from "@/i18n/keys";
 
 export default function Home() {
   return (
@@ -12,18 +13,17 @@ export default function Home() {
             <Bot className="h-16 w-16 text-primary-foreground" />
           </div>
           <h1 className="text-5xl font-bold text-foreground">
-            ChatBot Application Starter
+            {t("HOME_TITLE")}
           </h1>
         </div>
         <p className="text-lg text-muted-foreground mb-8">
-          Build intelligent conversational AI applications with a modern,
-          type-safe full-stack framework.
+          {t("HOME_SUBTITLE")}
         </p>
 
         {/* Link to Dashboard */}
         <Link href="/dashboard">
           <Button className="px-8 py-4 text-xl font-semibold rounded-full shadow-lg">
-            Go to Dashboard
+            {t("HOME_CTA")}
           </Button>
         </Link>
 
@@ -39,7 +39,7 @@ export default function Home() {
               target="_blank"
               className="hover:underline"
             >
-              View on GitHub
+              {t("HOME_GITHUB")}
             </Link>
           </Badge>
         </div>

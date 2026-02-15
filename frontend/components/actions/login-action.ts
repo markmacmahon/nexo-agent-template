@@ -6,6 +6,7 @@ import { authJwtLogin } from "@/app/clientService";
 import { redirect } from "next/navigation";
 import { loginSchema } from "@/lib/definitions";
 import { getErrorMessage } from "@/lib/utils";
+import { t } from "@/i18n/keys";
 
 export async function login(prevState: unknown, formData: FormData) {
   const validatedFields = loginSchema.safeParse({
@@ -30,14 +31,15 @@ export async function login(prevState: unknown, formData: FormData) {
 
   try {
     const { data, error } = await authJwtLogin(input);
+
     if (error) {
       return { server_validation_error: getErrorMessage(error) };
     }
     (await cookies()).set("accessToken", data.access_token);
   } catch (err) {
-    console.error("Login error:", err);
+    console.error("[LOGIN] Error:", err);
     return {
-      server_error: "An unexpected error occurred. Please try again later.",
+      server_error: t("ERROR_UNEXPECTED"),
     };
   }
   redirect("/dashboard");

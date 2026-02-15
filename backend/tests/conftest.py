@@ -8,7 +8,7 @@ import uuid
 from app.config import settings
 from app.models import User, Base
 
-from app.database import get_user_db, get_async_session
+from app.database import get_user_db, get_async_session, get_session_factory
 from app.main import app
 from app.users import get_jwt_strategy
 
@@ -43,7 +43,7 @@ async def db_session(engine):
 
 
 @pytest_asyncio.fixture(scope="function")
-async def test_client(db_session):
+async def test_client(engine, db_session):
     """Fixture to create a test client that uses the test database session."""
 
     # FastAPI-Users database override (wraps session with user operation helpers)
@@ -61,9 +61,19 @@ async def test_client(db_session):
         finally:
             await db_session.close()
 
+    # Session factory override — used by streaming endpoints that create
+    # their own sessions (e.g. SSE generator persist calls).
+    test_session_factory = async_sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
+
+    def override_get_session_factory():
+        return test_session_factory
+
     # Set up test database overrides
     app.dependency_overrides[get_user_db] = override_get_user_db
     app.dependency_overrides[get_async_session] = override_get_async_session
+    app.dependency_overrides[get_session_factory] = override_get_session_factory
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://localhost:8000"

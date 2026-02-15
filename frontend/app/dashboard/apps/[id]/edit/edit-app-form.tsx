@@ -7,7 +7,16 @@ import { Button } from "@/components/ui/button";
 import { editApp, testWebhook } from "@/components/actions/apps-action";
 import { SubmitButton } from "@/components/ui/submitButton";
 import { usePageTitle } from "@/components/breadcrumb-context";
-import { Copy, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  Copy,
+  ChevronDown,
+  ChevronRight,
+  MessageSquare,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import Link from "next/link";
+import { t, translateError } from "@/i18n/keys";
 
 const initialState = { message: "" };
 
@@ -183,9 +192,20 @@ export function EditAppForm({ app }: EditAppFormProps) {
     (app.config_json?.integration as Record<string, string> | undefined)
       ?.mode ?? "simulator";
 
+  const simulatorCfg =
+    (app.config_json?.simulator as Record<string, unknown> | undefined) ?? {};
+
   const [selectedMode, setSelectedMode] = useState<string>(currentMode);
+  const [scenario, setScenario] = useState<string>(
+    (simulatorCfg.scenario as string) ?? "generic",
+  );
+  const [disclaimer, setDisclaimer] = useState<boolean>(
+    (simulatorCfg.disclaimer as boolean) ?? false,
+  );
   const [webhookUrl, setWebhookUrl] = useState(app.webhook_url ?? "");
   const [webhookSecret, setWebhookSecret] = useState(app.webhook_secret ?? "");
+  const [secretRevealed, setSecretRevealed] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState(false);
   const [contractTab, setContractTab] = useState<
     "request" | "response" | "examples" | "signing"
   >("request");
@@ -193,6 +213,17 @@ export function EditAppForm({ app }: EditAppFormProps) {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
+  };
+
+  const isSecretMasked = webhookSecret === "••••••";
+  const canCopySecret = webhookSecret && !isSecretMasked;
+  const canRevealSecret = canCopySecret;
+
+  const handleCopySecret = () => {
+    if (!canCopySecret) return;
+    navigator.clipboard.writeText(webhookSecret);
+    setCopyFeedback(true);
+    setTimeout(() => setCopyFeedback(false), 2000);
   };
 
   const generateSecret = () => {
@@ -219,23 +250,23 @@ export function EditAppForm({ app }: EditAppFormProps) {
       const data = await testWebhook(app.id, webhookUrl, testMessage);
       setTestResult(data);
     } catch {
-      setTestResult({ ok: false, error: "Network error" });
+      setTestResult({ ok: false, error: t("ERROR_NETWORK") });
     } finally {
       setTestLoading(false);
     }
   };
 
   const webhookUrlWarning =
-    selectedMode === "webhook" && !webhookUrl
-      ? "No webhook configured. Simulator will be used until you add one."
-      : null;
+    selectedMode === "webhook" && !webhookUrl ? t("WEBHOOK_URL_WARNING") : null;
 
   return (
     <div className="max-w-4xl">
       <header className="mb-6">
-        <h1 className="text-3xl font-semibold text-foreground">Edit App</h1>
+        <h1 className="text-3xl font-semibold text-foreground">
+          {t("APP_EDIT_TITLE")}
+        </h1>
         <p className="text-lg text-muted-foreground">
-          Update the details of your app below.
+          {t("APP_EDIT_SUBTITLE")}
         </p>
       </header>
 
@@ -246,12 +277,12 @@ export function EditAppForm({ app }: EditAppFormProps) {
         {/* --- App details --- */}
         <div className="space-y-6">
           <div className="space-y-3">
-            <Label htmlFor="name">App Name</Label>
+            <Label htmlFor="name">{t("APP_LABEL_NAME")}</Label>
             <Input
               id="name"
               name="name"
               type="text"
-              placeholder="App name"
+              placeholder={t("APP_PLACEHOLDER_NAME")}
               defaultValue={app.name}
               required
               className="w-full"
@@ -262,12 +293,12 @@ export function EditAppForm({ app }: EditAppFormProps) {
           </div>
 
           <div className="space-y-3">
-            <Label htmlFor="description">App Description</Label>
+            <Label htmlFor="description">{t("APP_LABEL_DESCRIPTION")}</Label>
             <Input
               id="description"
               name="description"
               type="text"
-              placeholder="Description of the app"
+              placeholder={t("APP_PLACEHOLDER_DESCRIPTION")}
               defaultValue={app.description ?? ""}
               required
               className="w-full"
@@ -280,10 +311,14 @@ export function EditAppForm({ app }: EditAppFormProps) {
           </div>
         </div>
 
-        {/* === Integration mode === */}
+        {/* === Integration: Simulator type OR Webhook === */}
         <div className="space-y-4 border-t border-border pt-6">
-          <h2 className="text-lg font-semibold">Integration</h2>
-
+          <h2 className="text-lg font-semibold">
+            {t("APP_INTEGRATION_HEADING")}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t("APP_INTEGRATION_DESC")}
+          </p>
           <div className="flex gap-0 rounded-md border border-input overflow-hidden w-fit">
             {(["simulator", "webhook"] as const).map((mode) => (
               <button
@@ -296,30 +331,103 @@ export function EditAppForm({ app }: EditAppFormProps) {
                     : "bg-background text-foreground hover:bg-muted"
                 }`}
               >
-                {mode === "simulator" ? "Simulator" : "Webhook"}
+                {mode === "simulator"
+                  ? t("APP_MODE_SIMULATOR")
+                  : t("APP_MODE_WEBHOOK")}
               </button>
             ))}
           </div>
           <input type="hidden" name="integration_mode" value={selectedMode} />
-
-          <p className="text-sm text-muted-foreground">
-            {selectedMode === "simulator"
-              ? "Use built-in simulated replies for testing."
-              : "We will POST each customer message to your webhook and expect a JSON reply."}
-          </p>
         </div>
+
+        {/* === Simulator type (only if Simulator) === */}
+        {selectedMode === "simulator" && (
+          <div className="space-y-4 border-t border-border pt-6">
+            <h2 className="text-lg font-semibold">{t("SIM_HEADING")}</h2>
+            <div className="space-y-2">
+              <Label htmlFor="simulator_scenario">
+                {t("SIM_SCENARIO_LABEL")}
+              </Label>
+              <div className="flex gap-0 rounded-md border border-input overflow-hidden w-fit">
+                {(
+                  [
+                    ["generic", t("SIM_SCENARIO_GENERIC")],
+                    ["ecommerce_support", t("SIM_SCENARIO_ECOMMERCE")],
+                  ] as [string, string][]
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setScenario(key)}
+                    className={`px-4 py-2 text-sm font-medium transition-colors ${
+                      scenario === key
+                        ? "bg-foreground text-background"
+                        : "bg-background text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <input type="hidden" name="simulator_scenario" value={scenario} />
+              <p className="text-sm text-muted-foreground">
+                {scenario === "generic"
+                  ? t("SIM_SCENARIO_GENERIC_DESC")
+                  : t("SIM_SCENARIO_ECOMMERCE_DESC")}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={disclaimer}
+                onClick={() => setDisclaimer(!disclaimer)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                  disclaimer ? "bg-foreground" : "bg-muted"
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow ring-0 transition-transform ${
+                    disclaimer ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+              <input
+                type="hidden"
+                name="simulator_disclaimer"
+                value={disclaimer ? "true" : "false"}
+              />
+              <div>
+                <Label className="text-sm font-medium">
+                  {t("SIM_DISCLAIMER_LABEL")}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {t("SIM_DISCLAIMER_DESC")}
+                </p>
+              </div>
+            </div>
+            <div className="pt-2">
+              <Link href={`/dashboard/apps/${app.id}/chat`}>
+                <Button type="button" variant="outline" className="gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  {t("SIM_TRY_CHAT")}
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
 
         {/* === Webhook URL (only if webhook) === */}
         {selectedMode === "webhook" && (
           <div className="space-y-4 border-t border-border pt-6">
             <Label htmlFor="webhook_url" className="text-lg font-semibold">
-              Webhook URL
+              {t("WEBHOOK_URL_LABEL")}
             </Label>
             <Input
               id="webhook_url"
               name="webhook_url"
               type="url"
-              placeholder="https://your-service.com/webhook"
+              placeholder={t("WEBHOOK_URL_PLACEHOLDER")}
               value={webhookUrl}
               onChange={(e) => setWebhookUrl(e.target.value)}
               className="w-full"
@@ -347,12 +455,12 @@ export function EditAppForm({ app }: EditAppFormProps) {
                 }`}
               >
                 {!webhookUrl
-                  ? "Not configured"
+                  ? t("WEBHOOK_STATUS_NOT_CONFIGURED")
                   : testResult
                     ? testResult.ok
-                      ? "Last test: OK"
-                      : "Last test: Failed"
-                    : "Valid URL"}
+                      ? t("WEBHOOK_STATUS_OK")
+                      : t("WEBHOOK_STATUS_FAILED")
+                    : t("WEBHOOK_STATUS_VALID")}
               </span>
             </div>
           </div>
@@ -362,41 +470,85 @@ export function EditAppForm({ app }: EditAppFormProps) {
         {selectedMode === "webhook" && (
           <div className="space-y-4 border-t border-border pt-6">
             <h2 className="text-lg font-semibold">
-              Webhook Security (Optional)
+              {t("WEBHOOK_SECURITY_HEADING")}
             </h2>
             <p className="text-sm text-muted-foreground">
-              If set, each webhook request will be signed using HMAC-SHA256.
-              Your server can verify the signature to ensure authenticity.
+              {t("WEBHOOK_SECURITY_DESC")}
             </p>
-            <div className="flex gap-3 items-end">
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="webhook_secret">Webhook Secret</Label>
-                <Input
-                  id="webhook_secret"
-                  name="webhook_secret"
-                  type="password"
-                  placeholder="Enter or generate a secret"
-                  value={webhookSecret}
-                  onChange={(e) => setWebhookSecret(e.target.value)}
-                  className="w-full font-mono"
-                />
-              </div>
-              <Button type="button" variant="outline" onClick={generateSecret}>
-                Generate
-              </Button>
-              {webhookSecret && webhookSecret !== "••••••" && (
+            <div className="space-y-2">
+              <Label htmlFor="webhook_secret">
+                {t("WEBHOOK_SECRET_LABEL")}
+              </Label>
+              <div className="flex gap-2 flex-wrap items-center">
+                <div className="relative flex-1 min-w-[200px]">
+                  <Input
+                    id="webhook_secret"
+                    name="webhook_secret"
+                    type={
+                      canRevealSecret && secretRevealed ? "text" : "password"
+                    }
+                    placeholder={t("WEBHOOK_SECRET_PLACEHOLDER")}
+                    value={webhookSecret}
+                    onChange={(e) => setWebhookSecret(e.target.value)}
+                    className="w-full font-mono pr-10"
+                    readOnly={isSecretMasked}
+                  />
+                  {canRevealSecret && (
+                    <button
+                      type="button"
+                      onClick={() => setSecretRevealed(!secretRevealed)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      aria-label={
+                        secretRevealed
+                          ? t("WEBHOOK_SECRET_HIDE")
+                          : t("WEBHOOK_SECRET_SHOW")
+                      }
+                    >
+                      {secretRevealed ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  )}
+                </div>
                 <Button
                   type="button"
-                  variant="ghost"
-                  onClick={() => setWebhookSecret("")}
+                  variant="outline"
+                  size="icon"
+                  onClick={handleCopySecret}
+                  disabled={!canCopySecret}
+                  title={t("WEBHOOK_SECRET_COPY")}
+                  aria-label={t("WEBHOOK_SECRET_COPY")}
                 >
-                  Clear
+                  <Copy className="h-4 w-4" />
                 </Button>
-              )}
+                {copyFeedback && (
+                  <span className="text-sm text-muted-foreground">
+                    {t("WEBHOOK_SECRET_COPIED")}
+                  </span>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={generateSecret}
+                >
+                  {t("WEBHOOK_SECRET_GENERATE")}
+                </Button>
+                {webhookSecret && !isSecretMasked && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setWebhookSecret("")}
+                  >
+                    {t("WEBHOOK_SECRET_CLEAR")}
+                  </Button>
+                )}
+              </div>
             </div>
-            {webhookSecret && webhookSecret !== "••••••" && (
+            {webhookSecret && !isSecretMasked && (
               <p className="text-xs text-muted-foreground">
-                Copy this secret now — it will be masked after saving.
+                {t("WEBHOOK_SECRET_COPY_WARNING")}
               </p>
             )}
           </div>
@@ -410,7 +562,7 @@ export function EditAppForm({ app }: EditAppFormProps) {
           </>
         )}
 
-        <SubmitButton text="Update App" />
+        <SubmitButton text={t("APP_EDIT_SUBMIT")} />
 
         {state?.message && (
           <div className="mt-2 text-center text-sm text-destructive">
@@ -422,10 +574,12 @@ export function EditAppForm({ app }: EditAppFormProps) {
       {/* === Test Webhook (outside form) === */}
       {selectedMode === "webhook" && webhookUrl && (
         <div className="bg-card rounded-lg shadow-lg p-8 mt-6 space-y-4">
-          <h2 className="text-lg font-semibold">Test Webhook</h2>
+          <h2 className="text-lg font-semibold">{t("WEBHOOK_TEST_HEADING")}</h2>
           <div className="flex gap-3 items-end">
             <div className="flex-1 space-y-2">
-              <Label htmlFor="test_message">Sample message</Label>
+              <Label htmlFor="test_message">
+                {t("WEBHOOK_TEST_SAMPLE_LABEL")}
+              </Label>
               <Input
                 id="test_message"
                 value={testMessage}
@@ -439,7 +593,9 @@ export function EditAppForm({ app }: EditAppFormProps) {
               onClick={handleTestWebhook}
               disabled={testLoading}
             >
-              {testLoading ? "Testing..." : "Test webhook"}
+              {testLoading
+                ? t("WEBHOOK_TEST_LOADING")
+                : t("WEBHOOK_TEST_BUTTON")}
             </Button>
           </div>
 
@@ -468,16 +624,20 @@ export function EditAppForm({ app }: EditAppFormProps) {
                   <p className="font-medium text-red-800">
                     {testResult.status_code
                       ? `HTTP ${testResult.status_code}`
-                      : "Error"}{" "}
+                      : t("ERROR_GENERIC")}{" "}
                     &mdash; {testResult.latency_ms as number}ms
                   </p>
-                  <p className="text-red-700">{testResult.error as string}</p>
+                  <p className="text-red-700">
+                    {translateError(testResult.error as string)}
+                  </p>
                 </div>
               )}
               {testResult.signature_sent !== undefined && (
                 <p className="mt-1 text-xs text-muted-foreground">
                   Signature:{" "}
-                  {testResult.signature_sent ? "Sent ✓" : "Not configured"}
+                  {testResult.signature_sent
+                    ? t("WEBHOOK_TEST_SIGNATURE_SENT")
+                    : t("WEBHOOK_TEST_SIGNATURE_NONE")}
                 </p>
               )}
               <details className="mt-3">
@@ -500,17 +660,19 @@ export function EditAppForm({ app }: EditAppFormProps) {
       {/* === Webhook Contract === */}
       {selectedMode === "webhook" && (
         <div className="bg-card rounded-lg shadow-lg p-8 mt-6 space-y-4">
-          <h2 className="text-lg font-semibold">Webhook Contract</h2>
+          <h2 className="text-lg font-semibold">
+            {t("WEBHOOK_CONTRACT_HEADING")}
+          </h2>
 
           {/* Tabs */}
           <div className="flex gap-0 rounded-md border border-input overflow-hidden w-fit">
             {(
               [
-                ["request", "Request"],
-                ["response", "Response"],
-                ["examples", "Examples"],
-                ["signing", "Signature Verification"],
-              ] as const
+                ["request", t("WEBHOOK_TAB_REQUEST")],
+                ["response", t("WEBHOOK_TAB_RESPONSE")],
+                ["examples", t("WEBHOOK_TAB_EXAMPLES")],
+                ["signing", t("WEBHOOK_TAB_SIGNING")],
+              ] as ["request" | "response" | "examples" | "signing", string][]
             ).map(([key, label]) => (
               <button
                 key={key}
@@ -725,7 +887,7 @@ X-Signature: sha256=...`}
               <ChevronRight className="h-4 w-4" />
             )}
             <h2 className="text-lg font-semibold">
-              Streaming Responses (Optional)
+              {t("WEBHOOK_STREAMING_HEADING")}
             </h2>
           </button>
 

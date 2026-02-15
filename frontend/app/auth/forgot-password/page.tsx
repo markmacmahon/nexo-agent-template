@@ -15,6 +15,7 @@ import { useActionState } from "react";
 import { SubmitButton } from "@/components/ui/submitButton";
 import Link from "next/link";
 import { FormError } from "@/components/ui/FormError";
+import { t } from "@/i18n/keys";
 
 export default function Page() {
   const [state, dispatch] = useActionState(passwordReset, undefined);
@@ -25,24 +26,24 @@ export default function Page() {
         <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-semibold">
-              Password Recovery
+              {t("AUTH_PASSWORD_RECOVERY_TITLE")}
             </CardTitle>
             <CardDescription>
-              Enter your email to receive instructions to reset your password.
+              {t("AUTH_PASSWORD_RECOVERY_DESCRIPTION")}
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6 p-6">
             <div className="grid gap-3">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("FORM_EMAIL")}</Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
-                placeholder="m@example.com"
+                placeholder={t("FORM_PLACEHOLDER_EMAIL")}
                 required
               />
             </div>
-            <SubmitButton text="Send" />
+            <SubmitButton text={t("AUTH_PASSWORD_RECOVERY_SUBMIT")} />
             <FormError state={state} />
             <div className="mt-2 text-sm text-center text-muted-foreground">
               {state?.message && <p>{state.message}</p>}
@@ -52,7 +53,7 @@ export default function Page() {
                 href="/auth/login"
                 className="underline underline-offset-4 hover:text-foreground"
               >
-                Back to login
+                {t("AUTH_PASSWORD_RECOVERY_BACK")}
               </Link>
             </div>
           </CardContent>

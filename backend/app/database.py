@@ -36,5 +36,15 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
+def get_session_factory() -> async_sessionmaker:
+    """Return the async session factory.
+
+    Exposed as a dependency so tests can override it with a test-scoped factory.
+    Used by streaming endpoints that need to create their own short-lived sessions
+    (e.g. to persist data inside an SSE generator without leaking connections).
+    """
+    return async_session_maker
+
+
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):
     yield SQLAlchemyUserDatabase(session, User)

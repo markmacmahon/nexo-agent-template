@@ -2424,6 +2424,11 @@
             ],
             "title": "Is Verified",
             "default": false
+          },
+          "locale": {
+            "type": "string",
+            "title": "Locale",
+            "default": "en"
           }
         },
         "type": "object",
@@ -2459,6 +2464,11 @@
             "type": "boolean",
             "title": "Is Verified",
             "default": false
+          },
+          "locale": {
+            "type": "string",
+            "title": "Locale",
+            "default": "en"
           }
         },
         "type": "object",
@@ -2525,6 +2535,17 @@
               }
             ],
             "title": "Is Verified"
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
           }
         },
         "type": "object",

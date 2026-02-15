@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { t } from "@/i18n/keys";
 
 export default function DashboardError({
   error,
@@ -18,11 +19,9 @@ export default function DashboardError({
 
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-12">
-      <p className="text-muted-foreground">
-        Something went wrong loading this page.
-      </p>
+      <p className="text-muted-foreground">{t("ERROR_DASHBOARD")}</p>
       <Button variant="outline" onClick={reset}>
-        Try again
+        {t("ERROR_TRY_AGAIN")}
       </Button>
     </div>
   );

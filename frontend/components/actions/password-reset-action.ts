@@ -4,6 +4,7 @@ import { resetForgotPassword, resetResetPassword } from "@/app/clientService";
 import { redirect } from "next/navigation";
 import { passwordResetConfirmSchema } from "@/lib/definitions";
 import { getErrorMessage } from "@/lib/utils";
+import { t } from "@/i18n/keys";
 
 export async function passwordReset(prevState: unknown, formData: FormData) {
   const input = {
@@ -17,11 +18,11 @@ export async function passwordReset(prevState: unknown, formData: FormData) {
     if (error) {
       return { server_validation_error: getErrorMessage(error) };
     }
-    return { message: "Password reset instructions sent to your email." };
+    return { message: t("AUTH_PASSWORD_RESET_SUCCESS") };
   } catch (err) {
     console.error("Password reset error:", err);
     return {
-      server_error: "An unexpected error occurred. Please try again later.",
+      server_error: t("ERROR_UNEXPECTED"),
     };
   }
 }
@@ -58,7 +59,7 @@ export async function passwordResetConfirm(
   } catch (err) {
     console.error("Password reset confirmation error:", err);
     return {
-      server_error: "An unexpected error occurred. Please try again later.",
+      server_error: t("ERROR_UNEXPECTED"),
     };
   }
 }

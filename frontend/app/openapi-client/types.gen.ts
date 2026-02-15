@@ -385,6 +385,10 @@ export type UserCreate = {
    * Is Verified
    */
   is_verified?: boolean | null;
+  /**
+   * Locale
+   */
+  locale?: string;
 };
 
 /**
@@ -411,6 +415,10 @@ export type UserRead = {
    * Is Verified
    */
   is_verified?: boolean;
+  /**
+   * Locale
+   */
+  locale?: string;
 };
 
 /**
@@ -437,6 +445,10 @@ export type UserUpdate = {
    * Is Verified
    */
   is_verified?: boolean | null;
+  /**
+   * Locale
+   */
+  locale?: string | null;
 };
 
 /**

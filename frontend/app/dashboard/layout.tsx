@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { logout } from "@/components/actions/logout-action";
+import { t } from "@/i18n/keys";
 
 export default function DashboardLayout({
   children,
@@ -23,14 +24,14 @@ export default function DashboardLayout({
         <div className="flex flex-col items-center gap-8">
           <Link
             href="/dashboard"
-            title="Dashboard"
+            title={t("NAV_DASHBOARD")}
             className="flex items-center justify-center rounded-full bg-primary/10 p-3 transition-all duration-200 hover:scale-105 hover:bg-primary/20"
           >
             <Bot className="h-8 w-8 text-primary" />
           </Link>
           <Link
             href="/dashboard/apps"
-            title="Apps"
+            title={t("NAV_APPS")}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
             <Blocks className="h-5 w-5" />
@@ -53,7 +54,7 @@ export default function DashboardLayout({
                 <DropdownMenuContent align="end" side="bottom">
                   <DropdownMenuItem>
                     <button onClick={logout} className="block w-full text-left">
-                      Logout
+                      {t("NAV_LOGOUT")}
                     </button>
                   </DropdownMenuItem>
                 </DropdownMenuContent>

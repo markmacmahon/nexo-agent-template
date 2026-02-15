@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { t } from "@/i18n/keys";
 
 export default function GlobalError({
   error,
@@ -18,11 +19,9 @@ export default function GlobalError({
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8">
-      <p className="text-muted-foreground">
-        Something went wrong. Please try again.
-      </p>
+      <p className="text-muted-foreground">{t("ERROR_GENERIC")}</p>
       <Button variant="outline" onClick={reset}>
-        Try again
+        {t("ERROR_TRY_AGAIN")}
       </Button>
     </div>
   );

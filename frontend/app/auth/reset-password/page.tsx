@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Suspense } from "react";
 import { FieldError, FormError } from "@/components/ui/FormError";
+import { t } from "@/i18n/keys";
 
 function ResetPasswordForm() {
   const [state, dispatch] = useActionState(passwordResetConfirm, undefined);
@@ -29,19 +30,23 @@ function ResetPasswordForm() {
     <form action={dispatch}>
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Reset your Password</CardTitle>
+          <CardTitle className="text-2xl">
+            {t("AUTH_PASSWORD_RESET_TITLE")}
+          </CardTitle>
           <CardDescription>
-            Enter the new password and confirm it.
+            {t("AUTH_PASSWORD_RESET_DESCRIPTION")}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("FORM_PASSWORD")}</Label>
             <Input id="password" name="password" type="password" required />
           </div>
           <FieldError state={state} field="password" />
           <div className="grid gap-2">
-            <Label htmlFor="passwordConfirm">Password Confirm</Label>
+            <Label htmlFor="passwordConfirm">
+              {t("FORM_PASSWORD_CONFIRM")}
+            </Label>
             <Input
               id="passwordConfirm"
               name="passwordConfirm"
@@ -57,7 +62,7 @@ function ResetPasswordForm() {
             value={token}
             readOnly
           />
-          <SubmitButton text={"Send"} />
+          <SubmitButton text={t("AUTH_PASSWORD_RESET_SUBMIT")} />
           <FormError state={state} />
         </CardContent>
       </Card>
@@ -68,7 +73,7 @@ function ResetPasswordForm() {
 export default function Page() {
   return (
     <div className="flex h-screen w-full items-center justify-center bg-muted px-4">
-      <Suspense fallback={<div>Loading reset form...</div>}>
+      <Suspense fallback={<div>{t("AUTH_PASSWORD_RESET_LOADING")}</div>}>
         <ResetPasswordForm />
       </Suspense>
     </div>

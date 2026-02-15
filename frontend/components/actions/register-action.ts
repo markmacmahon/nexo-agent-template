@@ -6,6 +6,7 @@ import { registerRegister } from "@/app/clientService";
 
 import { registerSchema } from "@/lib/definitions";
 import { getErrorMessage } from "@/lib/utils";
+import { t } from "@/i18n/keys";
 
 export async function register(prevState: unknown, formData: FormData) {
   const validatedFields = registerSchema.safeParse({
@@ -35,7 +36,7 @@ export async function register(prevState: unknown, formData: FormData) {
   } catch (err) {
     console.error("Registration error:", err);
     return {
-      server_error: "An unexpected error occurred. Please try again later.",
+      server_error: t("ERROR_UNEXPECTED"),
     };
   }
   redirect(`/auth/login`);

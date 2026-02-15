@@ -104,7 +104,7 @@ describe("login action", () => {
     expect(result).toEqual({
       server_error: "An unexpected error occurred. Please try again later.",
     });
-    expect(consoleSpy).toHaveBeenCalledWith("Login error:", mockError);
+    expect(consoleSpy).toHaveBeenCalledWith("[LOGIN] Error:", mockError);
 
     consoleSpy.mockRestore();
   });

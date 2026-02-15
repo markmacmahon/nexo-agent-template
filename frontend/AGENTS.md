@@ -38,28 +38,76 @@ frontend/
 │   ├── actions/             # Server actions (login, register, etc.)
 │   ├── page-pagination.tsx
 │   └── page-size-selector.tsx
+├── i18n/
+│   └── keys.ts              # All user-facing strings (single source of truth)
 ├── lib/
 │   ├── clientConfig.ts      # API client configuration
 │   ├── definitions.ts       # Shared TypeScript types
 │   └── utils.ts             # Utility functions
-├── __tests__/               # Jest test suite
+├── __tests__/               # Jest unit tests
+├── e2e/                     # Playwright E2E tests
 ├── package.json
 └── start.sh                 # Dev server startup script
 ```
 
 ## Commands
 
-From the **project root**:
+**IMPORTANT**: Run `make` commands from the **project root**, not from this directory.
+
+### Daily Development
+
 ```bash
-make start-frontend         # Start Next.js dev server on :3000
-make test-frontend          # Run Jest tests
-make precommit              # Lint + format + type check
+# Start frontend (auto-kills port 3000, prevents conflicts)
+make start-frontend
+
+# Run unit tests
+make test-frontend
+
+# Run E2E tests (requires backend + frontend running)
+pnpm test:e2e          # Headless
+pnpm test:e2e:headed   # See browser
+pnpm test:e2e:ui       # Interactive UI
+
+# Before committing
+make precommit
 ```
 
-From `frontend/` directly (when needed):
+### E2E Testing
+
+**Prerequisites**: Test user `tester1@example.com` / `Password#99` with at least one app
+
+E2E tests use Playwright to test full user flows including SSE streaming. Always fix bugs discovered in E2E tests immediately.
+
+### OpenAPI Client Auto-Regeneration
+
+**This happens automatically** when using `make start-frontend`:
+
+1. Backend watcher detects changes to `main.py`, `schemas.py`, or `routes/*.py`
+2. Auto-generates `local-shared-data/openapi.json`
+3. Frontend watcher detects `openapi.json` change
+4. Auto-runs `pnpm run generate-client`
+5. TypeScript types in `app/openapi-client/` update automatically
+
+**Manual regeneration** (if watchers aren't running):
+```bash
+cd frontend
+pnpm run generate-client
+cd ..
+make start-frontend
+```
+
+**Symptoms that indicate you need to regenerate:**
+- TypeScript errors: "Module '@/app/openapi-client' has no exported member"
+- TypeScript errors: "Cannot find module '@/app/clientService'"
+- After pulling backend changes (if you're not running `make start-frontend`)
+- After backend migrations
+
+### Direct pnpm Commands (Advanced)
+
+From `frontend/` directory only when needed:
 ```bash
 pnpm install                # Install dependencies
-pnpm run dev                # Start dev server
+pnpm run dev                # Start dev server (prefer `make start-frontend`)
 pnpm test                   # Run tests
 pnpm run lint               # ESLint
 pnpm run lint:fix           # ESLint with auto-fix
@@ -123,6 +171,46 @@ cd frontend && pnpm run generate-client
 ```
 
 Run this after any backend route changes. Never manually write API types -- they come from the generated client in `app/openapi-client/`.
+
+## Internationalisation (i18n)
+
+All user-facing strings live in `i18n/keys.ts`. Never hardcode English text in components, pages, actions, or hooks.
+
+### Using `t()` for UI Text
+
+```typescript
+import { t } from "@/i18n/keys";
+
+// In JSX
+<h1>{t("AUTH_LOGIN_TITLE")}</h1>
+<Button>{t("APP_CREATE_SUBMIT")}</Button>
+
+// In props / defaults
+placeholder={t("CHAT_PLACEHOLDER")}
+```
+
+### Translating Backend Error Keys
+
+The backend returns raw i18n keys (e.g. `"ERROR_APP_NOT_FOUND"`) in `error.detail`. Use `translateError()` to convert them to human-readable text:
+
+```typescript
+import { translateError } from "@/i18n/keys";
+
+// In server actions — when extracting error.detail
+const detail = String(error.detail);
+return { error: translateError(detail) };
+```
+
+`translateError()` looks up the key in the messages map and falls back to returning the raw string for unknown keys (e.g. fastapi-users errors like `"LOGIN_BAD_CREDENTIALS"`).
+
+### Adding New Strings
+
+1. Add the key + English text to `i18n/keys.ts` in the appropriate section.
+2. Use `t("KEY")` in components/actions/hooks.
+3. For backend error keys, add both the key to `i18n/keys.ts` and use `translateError()` at the extraction point.
+4. For Zod validation messages, use `t("FORM_VALIDATION_*")` in `lib/definitions.ts`.
+
+Key naming conventions and the full list of prefixes are documented in the root `AGENTS.md`.
 
 ## Adding a Frontend Feature
 

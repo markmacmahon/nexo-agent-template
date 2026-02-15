@@ -4,6 +4,7 @@ import urllib.parse
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from .config import settings
 from .models import User
+from .i18n import t
 
 
 def get_email_config():
@@ -31,7 +32,7 @@ async def send_reset_password_email(user: User, token: str):
     encoded_params = urllib.parse.urlencode(params)
     link = f"{base_url}{encoded_params}"
     message = MessageSchema(
-        subject="Password recovery",
+        subject=t("EMAIL_PASSWORD_RESET_SUBJECT"),
         recipients=[email],
         template_body={"username": email, "link": link},
         subtype=MessageType.html,

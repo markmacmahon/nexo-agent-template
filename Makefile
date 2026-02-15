@@ -35,6 +35,9 @@ start-frontend: ## Start the frontend server with pnpm and hot reload
 test-frontend: ## Run frontend tests using npm
 	cd $(FRONTEND_DIR) && pnpm run test
 
+test-e2e: ## Run Playwright E2E tests (auto-starts backend + frontend)
+	cd $(FRONTEND_DIR) && pnpm test:e2e
+
 
 # Pre-commit commands
 .PHONY: install-hooks precommit

@@ -38,6 +38,6 @@ async def test_global_handler_catches_unexpected_errors():
 
     assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     data = response.json()
-    assert data["detail"] == "Internal server error"
+    assert data["detail"] == "ERROR_INTERNAL"
     # Must NOT leak the actual exception message
     assert "Intentional test error" not in response.text

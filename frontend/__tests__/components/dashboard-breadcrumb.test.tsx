@@ -10,16 +10,20 @@ jest.mock("next/navigation", () => ({
 }));
 
 const mockPageTitle = jest.fn();
+const mockExtraSegments = jest.fn();
 jest.mock("../../components/breadcrumb-context", () => ({
   usePageTitle: () => ({
     pageTitle: mockPageTitle(),
     setPageTitle: jest.fn(),
+    extraSegments: mockExtraSegments(),
+    setExtraSegments: jest.fn(),
   }),
 }));
 
 describe("DashboardBreadcrumb", () => {
   beforeEach(() => {
     mockPageTitle.mockReturnValue(undefined);
+    mockExtraSegments.mockReturnValue([]);
   });
 
   it("renders only Dashboard on /dashboard", () => {
@@ -92,5 +96,42 @@ describe("DashboardBreadcrumb", () => {
 
     const newAppEl = screen.getByText("New App");
     expect(newAppEl).toHaveAttribute("aria-current", "page");
+  });
+
+  it("renders app name and Chat on chat page", () => {
+    mockPathname.mockReturnValue(
+      "/dashboard/apps/123e4567-e89b-12d3-a456-426614174000/chat",
+    );
+    mockPageTitle.mockReturnValue("My Cool App");
+    render(<DashboardBreadcrumb />);
+
+    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("Apps")).toBeInTheDocument();
+    expect(screen.getByText("My Cool App")).toBeInTheDocument();
+    expect(screen.getByText("Chat")).toBeInTheDocument();
+  });
+
+  it("renders thread title as extra segment on chat page", () => {
+    mockPathname.mockReturnValue(
+      "/dashboard/apps/123e4567-e89b-12d3-a456-426614174000/chat",
+    );
+    mockPageTitle.mockReturnValue("My Cool App");
+    mockExtraSegments.mockReturnValue([{ label: "Order issue" }]);
+    render(<DashboardBreadcrumb />);
+
+    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("Apps")).toBeInTheDocument();
+    expect(screen.getByText("My Cool App")).toBeInTheDocument();
+    expect(screen.getByText("Chat")).toBeInTheDocument();
+    expect(screen.getByText("Order issue")).toBeInTheDocument();
+  });
+
+  it("links app name crumb to edit page from chat page", () => {
+    mockPathname.mockReturnValue("/dashboard/apps/abc-123/chat");
+    mockPageTitle.mockReturnValue("My App");
+    render(<DashboardBreadcrumb />);
+
+    const appLink = screen.getByText("My App").closest("a");
+    expect(appLink).toHaveAttribute("href", "/dashboard/apps/abc-123/edit");
   });
 });

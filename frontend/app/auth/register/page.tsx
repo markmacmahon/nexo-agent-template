@@ -15,6 +15,7 @@ import { useActionState } from "react";
 import { SubmitButton } from "@/components/ui/submitButton";
 import Link from "next/link";
 import { FieldError, FormError } from "@/components/ui/FormError";
+import { t } from "@/i18n/keys";
 
 export default function Page() {
   const [state, dispatch] = useActionState(register, undefined);
@@ -23,36 +24,36 @@ export default function Page() {
       <form action={dispatch}>
         <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-semibold">Sign Up</CardTitle>
-            <CardDescription>
-              Enter your email and password below to create your account.
-            </CardDescription>
+            <CardTitle className="text-2xl font-semibold">
+              {t("AUTH_REGISTER_TITLE")}
+            </CardTitle>
+            <CardDescription>{t("AUTH_REGISTER_DESCRIPTION")}</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6 p-6">
             <div className="grid gap-3">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("FORM_EMAIL")}</Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
-                placeholder="m@example.com"
+                placeholder={t("FORM_PLACEHOLDER_EMAIL")}
                 required
               />
               <FieldError state={state} field="email" />
             </div>
             <div className="grid gap-3">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("FORM_PASSWORD")}</Label>
               <Input id="password" name="password" type="password" required />
               <FieldError state={state} field="password" />
             </div>
-            <SubmitButton text="Sign Up" />
+            <SubmitButton text={t("AUTH_REGISTER_SUBMIT")} />
             <FormError state={state} />
             <div className="mt-4 text-center text-sm text-muted-foreground">
               <Link
                 href="/auth/login"
                 className="underline underline-offset-4 hover:text-foreground"
               >
-                Back to login
+                {t("AUTH_REGISTER_BACK")}
               </Link>
             </div>
           </CardContent>

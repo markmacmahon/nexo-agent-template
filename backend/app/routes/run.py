@@ -10,7 +10,9 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.database import User, get_async_session
+from sqlalchemy.ext.asyncio import async_sessionmaker
+
+from app.database import User, get_async_session, get_session_factory
 from app.models import App, Thread, Message
 from app.schemas import MessageRead, RunResponse
 from app.services.orchestrator import ChatOrchestrator
@@ -35,14 +37,14 @@ async def _get_thread_with_app(
     )
     app = app_result.scalars().first()
     if not app:
-        raise HTTPException(status_code=404, detail="App not found or not authorized")
+        raise HTTPException(status_code=404, detail="ERROR_APP_NOT_FOUND")
 
     thread_result = await db.execute(
         select(Thread).filter(Thread.id == thread_id, Thread.app_id == app_id)
     )
     thread = thread_result.scalars().first()
     if not thread:
-        raise HTTPException(status_code=404, detail="Thread not found")
+        raise HTTPException(status_code=404, detail="ERROR_THREAD_NOT_FOUND")
 
     return app, thread
 
@@ -113,7 +115,7 @@ async def run_sync(
 
     last_msg = await _get_last_user_message(thread_id, db)
     if not last_msg:
-        raise HTTPException(status_code=400, detail="No user messages in thread")
+        raise HTTPException(status_code=400, detail="ERROR_NO_USER_MESSAGES")
 
     history = await _get_history(thread_id, db)
 
@@ -125,7 +127,7 @@ async def run_sync(
         return RunResponse(
             status="error",
             assistant_message=None,
-            error=result.metadata.get("error", "No reply generated"),
+            error=result.metadata.get("error", "ERROR_NO_REPLY"),
         )
 
     # Build content_json with source metadata
@@ -152,6 +154,7 @@ async def run_stream(
     thread_id: UUID,
     db: AsyncSession = Depends(get_async_session),
     user: User = Depends(current_active_user),
+    session_factory: async_sessionmaker = Depends(get_session_factory),
 ):
     """Run the orchestrator and stream the response as SSE.
 
@@ -163,7 +166,7 @@ async def run_stream(
 
     last_msg = await _get_last_user_message(thread_id, db)
     if not last_msg:
-        raise HTTPException(status_code=400, detail="No user messages in thread")
+        raise HTTPException(status_code=400, detail="ERROR_NO_USER_MESSAGES")
 
     history = await _get_history(thread_id, db)
 
@@ -201,14 +204,17 @@ async def run_stream(
                 status = data.get("status", "completed")
 
                 if status == "completed" and full_text:
-                    # Persist assistant message for simulator/local chunks
-                    content_json = {"source": source}
+                    # Use a dedicated session so the connection is always
+                    # returned to the pool, even if the client disconnects
+                    # mid-stream (the DI session may outlive the generator).
+                    content_json: dict = {"source": source}
                     if reason:
                         content_json["reason"] = reason
 
-                    msg = await _persist_assistant_message(
-                        thread, full_text, db, content_json
-                    )
+                    async with session_factory() as stream_db:
+                        msg = await _persist_assistant_message(
+                            thread, full_text, stream_db, content_json
+                        )
                     yield _sse_event(
                         "done",
                         json.dumps(

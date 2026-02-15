@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 import httpx
 
 from app.schemas import RunResult
+from app.i18n import t
 
 logger = logging.getLogger(__name__)
 
@@ -26,24 +27,22 @@ def validate_webhook_url(url: str) -> bool:
     Raises ValueError if the URL is invalid or targets a blocked host.
     """
     if not url:
-        raise ValueError("Webhook URL must not be empty")
+        raise ValueError(t("WEBHOOK_URL_EMPTY"))
 
     parsed = urlparse(url)
 
     if parsed.scheme not in ("http", "https"):
-        raise ValueError(
-            f"Webhook URL must use http or https scheme, got '{parsed.scheme}'"
-        )
+        raise ValueError(t("WEBHOOK_URL_BAD_SCHEME", scheme=parsed.scheme))
 
     host = parsed.hostname or ""
     if not host:
-        raise ValueError("Webhook URL must have a host")
+        raise ValueError(t("WEBHOOK_URL_NO_HOST"))
 
     if host in _BLOCKED_HOSTS:
-        raise ValueError(f"Webhook URL host '{host}' is blocked")
+        raise ValueError(t("WEBHOOK_URL_BLOCKED", host=host))
 
     if any(host.startswith(prefix) for prefix in _BLOCKED_PREFIXES):
-        raise ValueError(f"Webhook URL host '{host}' is blocked (private network)")
+        raise ValueError(t("WEBHOOK_URL_BLOCKED_PRIVATE", host=host))
 
     return True
 
@@ -74,27 +73,31 @@ class WebhookClient:
                 )
         except httpx.TimeoutException as exc:
             logger.warning("Webhook timed out: %s", self.url)
-            raise WebhookError(f"Webhook timed out: {exc}") from exc
+            raise WebhookError(t("WEBHOOK_TIMEOUT", detail=exc)) from exc
         except httpx.HTTPError as exc:
             logger.warning("Webhook HTTP error: %s - %s", self.url, exc)
-            raise WebhookError(f"Webhook request failed: {exc}") from exc
+            raise WebhookError(t("WEBHOOK_REQUEST_FAILED", detail=exc)) from exc
 
         if response.status_code != 200:
             logger.warning(
                 "Webhook returned %s: %s", response.status_code, response.text[:200]
             )
             raise WebhookError(
-                f"Webhook returned HTTP {response.status_code}: {response.text[:200]}"
+                t(
+                    "WEBHOOK_BAD_STATUS",
+                    status=response.status_code,
+                    body=response.text[:200],
+                )
             )
 
         try:
             data = response.json()
         except Exception as exc:
-            raise WebhookError(f"Invalid JSON response from webhook: {exc}") from exc
+            raise WebhookError(t("WEBHOOK_INVALID_JSON", detail=exc)) from exc
 
         reply_text = data.get("reply")
         if reply_text is None:
-            raise WebhookError("Webhook response missing required 'reply' field")
+            raise WebhookError(t("WEBHOOK_MISSING_REPLY"))
 
         return RunResult(
             reply_text=str(reply_text),
@@ -133,14 +136,18 @@ class WebhookClient:
                     body = (await response.aread()).decode("utf-8", errors="replace")
                     await response.aclose()
                     raise WebhookError(
-                        f"Webhook returned HTTP {response.status_code}: {body[:200]}"
+                        t(
+                            "WEBHOOK_BAD_STATUS",
+                            status=response.status_code,
+                            body=body[:200],
+                        )
                     )
 
                 content_type = response.headers.get("content-type", "")
                 if "text/event-stream" not in content_type:
                     await response.aclose()
                     raise WebhookError(
-                        f"Expected SSE (text/event-stream) but got '{content_type}'"
+                        t("WEBHOOK_BAD_CONTENT_TYPE", content_type=content_type)
                     )
 
                 try:
@@ -151,7 +158,7 @@ class WebhookClient:
 
         except httpx.TimeoutException as exc:
             logger.warning("Webhook stream timed out: %s", self.url)
-            raise WebhookError(f"Webhook timed out: {exc}") from exc
+            raise WebhookError(t("WEBHOOK_TIMEOUT", detail=exc)) from exc
         except httpx.HTTPError as exc:
             logger.warning("Webhook stream HTTP error: %s - %s", self.url, exc)
-            raise WebhookError(f"Webhook request failed: {exc}") from exc
+            raise WebhookError(t("WEBHOOK_REQUEST_FAILED", detail=exc)) from exc

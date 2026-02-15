@@ -6,6 +6,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
+import { t } from "@/i18n/keys";
 
 interface PagePaginationProps {
   currentPage: number;
@@ -32,7 +33,7 @@ export function PagePagination({
     <div className="flex items-center gap-1 text-sm text-muted-foreground">
       <span className="mr-2 whitespace-nowrap">
         {totalItems === 0
-          ? "0 results"
+          ? t("PAGINATION_NO_RESULTS")
           : `${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, totalItems)} of ${totalItems}`}
       </span>
 

@@ -12,6 +12,7 @@ import { ReadAppResponse, AppRead } from "@/app/openapi-client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { appSchema } from "@/lib/definitions";
+import { t, translateError } from "@/i18n/keys";
 
 export async function fetchApps(
   page: number = 1,
@@ -21,7 +22,7 @@ export async function fetchApps(
   const token = cookieStore.get("accessToken")?.value;
 
   if (!token) {
-    return { error: "No access token found" };
+    return { error: t("ERROR_NO_TOKEN") };
   }
 
   try {
@@ -40,17 +41,17 @@ export async function fetchApps(
         typeof error === "object" && "detail" in error
           ? String(error.detail)
           : String(error);
-      return { error: detail };
+      return { error: translateError(detail) };
     }
 
     if (!data) {
-      return { error: "No data returned from server" };
+      return { error: t("ERROR_NO_DATA") };
     }
 
     return { data };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to fetch apps",
+      error: err instanceof Error ? err.message : t("ERROR_FETCH_APPS"),
     };
   }
 }
@@ -60,7 +61,7 @@ export async function removeApp(id: string) {
   const token = cookieStore.get("accessToken")?.value;
 
   if (!token) {
-    return { message: "No access token found" };
+    return { message: t("ERROR_NO_TOKEN") };
   }
 
   const { error } = await deleteApp({
@@ -83,7 +84,7 @@ export async function addApp(prevState: {}, formData: FormData) {
   const token = cookieStore.get("accessToken")?.value;
 
   if (!token) {
-    return { message: "No access token found" };
+    return { message: t("ERROR_NO_TOKEN") };
   }
 
   const validatedFields = appSchema.safeParse({
@@ -102,6 +103,18 @@ export async function addApp(prevState: {}, formData: FormData) {
 
   const webhookSecret = formData.get("webhook_secret") as string | null;
 
+  // Build config_json with simulator settings when applicable
+  const config_json: Record<string, unknown> = {
+    integration: { mode: integration_mode },
+  };
+
+  if (integration_mode === "simulator") {
+    config_json.simulator = {
+      scenario: (formData.get("simulator_scenario") as string) || "generic",
+      disclaimer: formData.get("simulator_disclaimer") === "true",
+    };
+  }
+
   const { error } = await createApp({
     headers: {
       Authorization: `Bearer ${token}`,
@@ -111,9 +124,7 @@ export async function addApp(prevState: {}, formData: FormData) {
       description,
       webhook_url: webhook_url || null,
       webhook_secret: webhookSecret || null,
-      config_json: {
-        integration: { mode: integration_mode },
-      },
+      config_json,
     },
   });
   if (error) {
@@ -129,7 +140,7 @@ export async function fetchAppById(
   const token = cookieStore.get("accessToken")?.value;
 
   if (!token) {
-    return { error: "No access token found" };
+    return { error: t("ERROR_NO_TOKEN") };
   }
 
   try {
@@ -145,17 +156,17 @@ export async function fetchAppById(
         typeof error === "object" && "detail" in error
           ? String(error.detail)
           : String(error);
-      return { error: detail };
+      return { error: translateError(detail) };
     }
 
     if (!data) {
-      return { error: "App not found" };
+      return { error: t("ERROR_APP_NOT_FOUND") };
     }
 
     return { data };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to fetch app",
+      error: err instanceof Error ? err.message : t("ERROR_FETCH_APP"),
     };
   }
 }
@@ -169,7 +180,7 @@ export async function editApp(
   const token = cookieStore.get("accessToken")?.value;
 
   if (!token) {
-    return { message: "No access token found" };
+    return { message: t("ERROR_NO_TOKEN") };
   }
 
   const validatedFields = appSchema.safeParse({
@@ -188,14 +199,24 @@ export async function editApp(
 
   const webhookSecret = formData.get("webhook_secret") as string | null;
 
+  // Build config_json with simulator settings when applicable
+  const config_json: Record<string, unknown> = {
+    integration: { mode: integration_mode },
+  };
+
+  if (integration_mode === "simulator") {
+    config_json.simulator = {
+      scenario: (formData.get("simulator_scenario") as string) || "generic",
+      disclaimer: formData.get("simulator_disclaimer") === "true",
+    };
+  }
+
   // Only send webhook_secret if it was explicitly changed (not the masked placeholder)
   const body: Record<string, unknown> = {
     name,
     description,
     webhook_url: webhook_url || null,
-    config_json: {
-      integration: { mode: integration_mode },
-    },
+    config_json,
   };
 
   if (webhookSecret && webhookSecret !== "••••••") {
@@ -228,7 +249,7 @@ export async function testWebhook(
   const token = cookieStore.get("accessToken")?.value;
 
   if (!token) {
-    return { ok: false, error: "No access token found" };
+    return { ok: false, error: t("ERROR_NO_TOKEN") };
   }
 
   const baseUrl = process.env.API_BASE_URL;
@@ -247,6 +268,6 @@ export async function testWebhook(
     });
     return (await res.json()) as Record<string, unknown>;
   } catch {
-    return { ok: false, error: "Network error" };
+    return { ok: false, error: t("ERROR_NETWORK") };
   }
 }

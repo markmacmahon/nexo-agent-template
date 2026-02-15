@@ -19,6 +19,7 @@ import Link from "next/link";
 import { PageSizeSelector } from "@/components/page-size-selector";
 import { PagePagination } from "@/components/page-pagination";
 import { ErrorToast } from "@/components/error-toast";
+import { t } from "@/i18n/keys";
 
 interface AppsPageProps {
   searchParams: Promise<{
@@ -41,9 +42,9 @@ export default async function AppsPage({ searchParams }: AppsPageProps) {
     <div className="max-w-4xl">
       {hasError && <ErrorToast message={result.error} />}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold">Apps</h2>
+        <h2 className="text-2xl font-semibold">{t("APP_HEADING")}</h2>
         <Link href="/dashboard/apps/new">
-          <Button variant="outline">Add New App</Button>
+          <Button variant="outline">{t("APP_ADD_NEW")}</Button>
         </Link>
       </div>
 
@@ -62,16 +63,18 @@ export default async function AppsPage({ searchParams }: AppsPageProps) {
         <Table className="text-sm">
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead className="w-16 text-center">Actions</TableHead>
+              <TableHead>{t("APP_TABLE_NAME")}</TableHead>
+              <TableHead>{t("APP_TABLE_DESCRIPTION")}</TableHead>
+              <TableHead className="w-16 text-center">
+                {t("APP_TABLE_ACTIONS")}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {!apps.items?.length ? (
               <TableRow>
                 <TableCell colSpan={3} className="text-center">
-                  No results.
+                  {t("APP_TABLE_EMPTY")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -90,8 +93,13 @@ export default async function AppsPage({ searchParams }: AppsPageProps) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="p-2">
                         <DropdownMenuItem asChild>
+                          <Link href={`/dashboard/apps/${app.id}/chat`}>
+                            {t("APP_ACTION_CHAT")}
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
                           <Link href={`/dashboard/apps/${app.id}/edit`}>
-                            Edit
+                            {t("APP_ACTION_EDIT")}
                           </Link>
                         </DropdownMenuItem>
                         <DeleteButton appId={app.id} />

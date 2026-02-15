@@ -81,7 +81,7 @@ async def test_create_thread_unauthorized_app(
     )
 
     assert response.status_code == 404
-    assert "not found or not authorized" in response.json()["detail"].lower()
+    assert response.json()["detail"] == "ERROR_APP_NOT_FOUND"
 
 
 @pytest.mark.asyncio

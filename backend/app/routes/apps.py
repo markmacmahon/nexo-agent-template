@@ -55,7 +55,7 @@ async def get_app(
     app = result.scalars().first()
 
     if not app:
-        raise HTTPException(status_code=404, detail="App not found or not authorized")
+        raise HTTPException(status_code=404, detail="ERROR_APP_NOT_FOUND")
 
     return AppRead.mask_secret(AppRead.model_validate(app))
 
@@ -73,7 +73,7 @@ async def update_app(
     app = result.scalars().first()
 
     if not app:
-        raise HTTPException(status_code=404, detail="App not found or not authorized")
+        raise HTTPException(status_code=404, detail="ERROR_APP_NOT_FOUND")
 
     update_data = app_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -96,9 +96,9 @@ async def delete_app(
     app = result.scalars().first()
 
     if not app:
-        raise HTTPException(status_code=404, detail="App not found or not authorized")
+        raise HTTPException(status_code=404, detail="ERROR_APP_NOT_FOUND")
 
     await db.delete(app)
     await db.commit()
 
-    return {"message": "App successfully deleted"}
+    return {"message": "ACTION_APP_DELETED"}

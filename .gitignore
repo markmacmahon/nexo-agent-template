@@ -147,6 +147,12 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# Frontend test / E2E output (Playwright, Jest)
+frontend/playwright-report/
+frontend/test-results/
+frontend/blob-report/
+frontend/coverage/
+
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore

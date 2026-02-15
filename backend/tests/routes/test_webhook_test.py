@@ -115,7 +115,7 @@ async def test_webhook_test_missing_reply_field(
 
     data = response.json()
     assert data["ok"] is False
-    assert "reply" in data["error"]
+    assert data["error"] == "WEBHOOK_TEST_MISSING_REPLY"
 
 
 @pytest.mark.asyncio

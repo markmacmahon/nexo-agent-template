@@ -67,7 +67,7 @@ async def webhook_test(
     )
     app = result.scalars().first()
     if not app:
-        raise HTTPException(status_code=404, detail="App not found or not authorized")
+        raise HTTPException(status_code=404, detail="ERROR_APP_NOT_FOUND")
 
     # Validate URL
     try:
@@ -117,7 +117,7 @@ async def webhook_test(
                 ok=False,
                 status_code=response.status_code,
                 latency_ms=latency_ms,
-                error=f"Webhook returned HTTP {response.status_code}",
+                error="WEBHOOK_TEST_BAD_STATUS",
                 response_json=response_json,
                 response_text=response.text[:2000],
                 signature_sent=signature_sent,
@@ -128,7 +128,7 @@ async def webhook_test(
                 ok=False,
                 status_code=response.status_code,
                 latency_ms=latency_ms,
-                error="Response is not valid JSON",
+                error="WEBHOOK_TEST_NOT_JSON",
                 response_text=response.text[:2000],
                 signature_sent=signature_sent,
             )
@@ -138,7 +138,7 @@ async def webhook_test(
                 ok=False,
                 status_code=response.status_code,
                 latency_ms=latency_ms,
-                error="Response missing required 'reply' field",
+                error="WEBHOOK_TEST_MISSING_REPLY",
                 response_json=response_json,
                 signature_sent=signature_sent,
             )
@@ -156,14 +156,14 @@ async def webhook_test(
         return WebhookTestResponse(
             ok=False,
             latency_ms=latency_ms,
-            error="Request timed out",
+            error="WEBHOOK_TEST_TIMEOUT",
             signature_sent=signature_sent,
         )
-    except Exception as exc:
+    except Exception:
         latency_ms = int((time.monotonic() - start) * 1000)
         return WebhookTestResponse(
             ok=False,
             latency_ms=latency_ms,
-            error=f"Connection error: {exc}",
+            error="WEBHOOK_TEST_CONNECTION_ERROR",
             signature_sent=signature_sent,
         )

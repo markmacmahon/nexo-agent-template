@@ -31,7 +31,7 @@ No feature work without this cycle.
 
 **Definition of done:**
 - Tests added/updated and all passing
-- Lint + format clean (`make precommit`)
+- Lint + format clean (`make precommit`) - **only run when ready to commit**
 - No dead/debug code
 - Types correct (Python + TypeScript strict)
 
@@ -49,11 +49,13 @@ When implementing changes:
 1. Propose the smallest failing test.
 2. Implement minimal passing code.
 3. Refactor for clarity and modularity.
-4. Summarize changes briefly (why + impact).
+4. Run tests frequently during development (`make test-backend` or `make test-frontend`).
+5. Run `make precommit` only once when feature is complete and ready to commit.
+6. Summarize changes briefly (why + impact).
 
 If unclear, assume the simplest interpretation and proceed test-first.
 
-**Avoid:** large rewrites, over-engineering, adding frameworks without need.
+**Avoid:** large rewrites, over-engineering, adding frameworks without need, running precommit repeatedly during development.
 
 ## AI Agent Configuration
 
@@ -114,6 +116,76 @@ End-to-end type safety is maintained automatically:
 4. Frontend uses typed API client for all backend calls
 
 Never manually write API types -- they're auto-generated. After backend route changes, regenerate frontend types: `cd frontend && pnpm run generate-client`.
+
+## Internationalisation (i18n)
+
+All user-facing strings are managed through centralised i18n key files. No hardcoded English text in components, routes, or actions.
+
+### Locale / language
+
+The system is **language-aware** using a **locale** property everywhere. We use **ISO 639-1 two-letter language codes** (e.g. `en`, `es`, `pt`). Default is always **English** (`en`).
+
+| Where        | Property | Default | Notes |
+|-------------|----------|---------|--------|
+| Database    | `user.locale` | `en` | Stored on the user table; migration adds column with `server_default='en'`. |
+| API         | `UserRead.locale`, `UserUpdate.locale` | `en` | Returned in `/users/me` and user endpoints; PATCH to update. |
+| Backend     | `SUPPORTED_LOCALES`, `DEFAULT_LOCALE` in `schemas.py` | `en` | Validation restricts to supported codes. |
+| Frontend    | `DEFAULT_LOCALE`, `SUPPORTED_LOCALES` in `lib/locale.ts` | `en` | Use `user.locale` from API when present; fallback to default. |
+
+**Supported locales (no translations yet):** `en` (English), `es` (Spanish), `pt` (Portuguese). Adding new codes is done in both backend `schemas.SUPPORTED_LOCALES` and frontend `lib/locale.ts`. When translations are added, backend `app/i18n/keys.py` and frontend `i18n/keys.ts` will be keyed by locale.
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `frontend/i18n/keys.ts` | **Single source of truth** for all frontend UI text AND the English translations of backend error keys |
+| `backend/app/i18n/keys.py` | Backend-internal strings only (simulator replies, webhook-client exceptions, email subjects) |
+
+### The Error-Key Contract
+
+Backend HTTP responses return **raw i18n keys** (not English text) for all errors and action messages:
+
+```python
+# Backend route — returns the KEY, not a translated string
+raise HTTPException(status_code=404, detail="ERROR_APP_NOT_FOUND")
+return {"message": "ACTION_APP_DELETED"}
+```
+
+The frontend translates these keys to human-readable text:
+
+```typescript
+import { translateError } from "@/i18n/keys";
+// "ERROR_APP_NOT_FOUND" → "App not found or not authorized"
+const message = translateError(error.detail);
+```
+
+This is the same pattern fastapi-users already uses (e.g. `"LOGIN_BAD_CREDENTIALS"`). The `translateError()` function falls back to returning the raw string if the key is unknown.
+
+### Rules for Adding New Strings
+
+1. **Frontend UI text** — add key to `frontend/i18n/keys.ts`, use `t("KEY")` in components/actions.
+2. **Backend HTTP errors/messages** — return the raw key string from the route; add the key + English text to `frontend/i18n/keys.ts`.
+3. **Backend-internal text** (simulator, webhook-client, email) — add to `backend/app/i18n/keys.py`, use `t("KEY")`.
+4. **Validation messages** (Zod schemas) — use `t("FORM_VALIDATION_*")` in `lib/definitions.ts`.
+
+### Naming Conventions
+
+Keys use `SCREAMING_SNAKE_CASE` with a category prefix:
+
+| Prefix | Usage |
+|--------|-------|
+| `ERROR_*` | Error messages (both frontend-originated and backend-originated) |
+| `ACTION_*` | Success/confirmation messages |
+| `AUTH_*` | Authentication UI (login, register, password reset) |
+| `FORM_*` / `FORM_VALIDATION_*` | Form labels and validation messages |
+| `APP_*` | App CRUD UI |
+| `CHAT_*` | Chat interface |
+| `NAV_*` | Navigation / breadcrumbs |
+| `WEBHOOK_*` | Webhook configuration UI and backend webhook-test keys |
+| `SIM_*` | Simulator UI labels and backend simulator responses |
+| `HOME_*` | Landing page |
+| `PAGINATION_*` | Table pagination |
+| `EMAIL_*` | Email subjects (backend only) |
 
 ## Configuration Reference
 

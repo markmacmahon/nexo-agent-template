@@ -212,8 +212,16 @@ To ensure a clean development environment:
 ### Type Safety & API Sync
 
 - API documentation is auto-generated at http://localhost:8000/docs
-- Frontend TypeScript types sync automatically when backend routes change
-- After backend changes, regenerate types: `cd frontend && pnpm run generate-client`
+- **OpenAPI schema and TypeScript types sync automatically** when using `make` commands
+- Watchers monitor backend routes and auto-regenerate frontend types
+
+**How it works:**
+1. Backend watcher detects changes to routes/schemas
+2. Auto-generates `local-shared-data/openapi.json`
+3. Frontend watcher detects JSON change
+4. Auto-regenerates TypeScript types in `app/openapi-client/`
+
+Manual regeneration (if needed): `cd frontend && pnpm run generate-client`
 
 ### Testing
 
@@ -257,12 +265,31 @@ Access the email inbox at http://localhost:8025
 
 Both frontend and backend can be deployed to Vercel. Configure the environment variables listed in the [GitHub Actions Configuration](#github-actions-configuration) section in your Vercel project settings.
 
+## Chat Interface
+
+The application includes a modern chat UI with real-time streaming:
+
+- **SSE Streaming**: Token-by-token message display via Server-Sent Events
+- **Auto-resize Input**: Modern message input (44px-200px height)
+- **Collapsible Sidebar**: Thread management with slide animations
+- **Smart Scrolling**: Auto-scroll with manual override button
+- **Mobile Responsive**: Overlay sidebar on mobile devices
+
+### Testing the Chat
+
+1. Create an app in the dashboard
+2. Click "Chat" to open the chat interface
+3. Send a message - it will stream in real-time using the simulator by default
+
+See `WIP.md` for latest features and changes.
+
 ## Next Steps
 
 1. Customize the authentication flow for your use case
-2. Add your ChatBot logic to the backend API routes
-3. Build your conversation UI in the Next.js frontend
-4. Configure environment variables for production deployment
+2. Configure integration mode (simulator or webhook) in app settings
+3. Add your own AI/chatbot backend via webhook integration
+4. Customize the chat UI components as needed
+5. Configure environment variables for production deployment
 
 ---
 

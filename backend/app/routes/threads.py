@@ -28,7 +28,7 @@ async def get_app_by_id(
     app = result.scalars().first()
 
     if not app:
-        raise HTTPException(status_code=404, detail="App not found or not authorized")
+        raise HTTPException(status_code=404, detail="ERROR_APP_NOT_FOUND")
 
     return app
 
@@ -48,9 +48,7 @@ async def get_thread_by_id(
     thread = result.scalars().first()
 
     if not thread:
-        raise HTTPException(
-            status_code=404, detail="Thread not found or not authorized"
-        )
+        raise HTTPException(status_code=404, detail="ERROR_THREAD_NOT_FOUND")
 
     return thread
 
@@ -152,4 +150,4 @@ async def delete_thread(
     await db.delete(thread)
     await db.commit()
 
-    return {"message": "Thread successfully deleted"}
+    return {"message": "ACTION_THREAD_DELETED"}

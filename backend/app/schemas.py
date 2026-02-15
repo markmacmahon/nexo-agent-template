@@ -3,22 +3,35 @@ from datetime import datetime
 from typing import Literal, Any
 
 from fastapi_users import schemas
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from uuid import UUID
 
 IntegrationMode = Literal["simulator", "webhook"]
 
+# ISO 639-1 two-letter language codes. Default is always English.
+SUPPORTED_LOCALES = ("en", "es", "pt")
+DEFAULT_LOCALE = "en"
+
 
 class UserRead(schemas.BaseUser[uuid.UUID]):
-    pass
+    locale: str = DEFAULT_LOCALE
 
 
 class UserCreate(schemas.BaseUserCreate):
-    pass
+    locale: str = DEFAULT_LOCALE
 
 
 class UserUpdate(schemas.BaseUserUpdate):
-    pass
+    locale: str | None = None
+
+    @field_validator("locale")
+    @classmethod
+    def locale_must_be_supported(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        if v not in SUPPORTED_LOCALES:
+            raise ValueError(f"locale must be one of {SUPPORTED_LOCALES}")
+        return v
 
 
 class AppBase(BaseModel):

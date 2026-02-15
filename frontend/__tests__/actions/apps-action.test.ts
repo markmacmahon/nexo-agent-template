@@ -196,7 +196,10 @@ describe("addApp", () => {
         description: "My app description",
         webhook_url: null,
         webhook_secret: null,
-        config_json: { integration: { mode: "simulator" } },
+        config_json: {
+          integration: { mode: "simulator" },
+          simulator: { scenario: "generic", disclaimer: false },
+        },
       },
     });
     expect(redirect).toHaveBeenCalledWith("/dashboard/apps");
@@ -433,6 +436,31 @@ describe("editApp", () => {
 
     expect(result).toEqual({ message: "APP_NOT_FOUND" });
     expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it("includes simulator config when mode is simulator", async () => {
+    const mockCookieStore = await cookies();
+    (mockCookieStore.get as jest.Mock).mockReturnValue({
+      value: "test-token",
+    });
+
+    (updateApp as jest.Mock).mockResolvedValue({});
+
+    const formData = new FormData();
+    formData.set("name", "Sim App");
+    formData.set("description", "Simulator test");
+    formData.set("integration_mode", "simulator");
+    formData.set("webhook_url", "");
+    formData.set("simulator_scenario", "ecommerce_support");
+    formData.set("simulator_disclaimer", "true");
+
+    await editApp("app-1", {}, formData);
+
+    const callBody = (updateApp as jest.Mock).mock.calls[0][0].body;
+    expect(callBody.config_json).toEqual({
+      integration: { mode: "simulator" },
+      simulator: { scenario: "ecommerce_support", disclaimer: true },
+    });
   });
 
   it("sends new webhook_secret when changed", async () => {

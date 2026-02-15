@@ -21,6 +21,9 @@ class Base(DeclarativeBase):
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
+    """User model. locale: ISO 639-1 two-letter language code (default en)."""
+
+    locale = Column(String(5), nullable=False, default="en", server_default="en")
     apps = relationship("App", back_populates="user", cascade="all, delete-orphan")
 
 

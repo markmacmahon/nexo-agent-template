@@ -26,6 +26,9 @@ backend/
 │   ├── users.py             # fastapi-users configuration
 │   ├── email.py             # Email sending logic
 │   ├── utils.py             # Pure utility functions
+│   ├── i18n/                # Internationalisation
+│   │   ├── __init__.py      # Exports t()
+│   │   └── keys.py          # Backend-internal translated strings
 │   ├── routes/              # API route modules
 │   │   ├── apps.py          # CRUD for apps
 │   │   ├── threads.py       # CRUD for threads
@@ -50,20 +53,40 @@ backend/
 
 ## Commands
 
-From the **project root**:
+**IMPORTANT**: Run `make` commands from the **project root**, not from this directory.
+
+### Daily Development
+
 ```bash
-make start-backend          # Start FastAPI dev server on :8000
-make test-backend           # Run pytest (starts test DB automatically)
-make precommit              # Lint + format + type check
+# Start backend (auto-kills port 8000, prevents conflicts)
+make start-backend
+
+# Run tests (starts test DB automatically on port 5433)
+make test-backend
+
+# Before committing
+make precommit
 ```
 
-From `backend/` directly (when needed):
+### Direct uv Commands (Advanced)
+
+From `backend/` directory only when needed:
 ```bash
 uv sync                     # Install/sync dependencies
 uv sync --upgrade           # Update all dependencies
 uv run pytest               # Run tests
 uv run pytest -x            # Stop on first failure (useful during TDD red-green)
 ```
+
+### Why Use Make Targets?
+
+The Makefile automatically kills orphan processes:
+```bash
+make start-backend  # Runs: lsof -ti :8000 | xargs kill before starting
+make start-frontend # Runs: lsof -ti :3000 | xargs kill before starting
+```
+
+This prevents "port already in use" errors.
 
 ## Testing Conventions
 
@@ -97,6 +120,44 @@ make docker-db-schema migration_name="add users table"
 - Development DB: `agents_db` on port 5432
 - Test DB: `agents_test_db` on port 5433
 - Modify models in `app/models.py`, then generate a migration. Never edit migration files by hand unless necessary.
+
+## Internationalisation (i18n) — Error Keys
+
+The backend returns **raw i18n key strings** for all client-facing errors and messages. The frontend owns the English translations.
+
+### HTTP Errors and Success Messages
+
+Return the key directly — do **not** call `t()`:
+
+```python
+# Correct: raw key string
+raise HTTPException(status_code=404, detail="ERROR_APP_NOT_FOUND")
+return {"message": "ACTION_APP_DELETED"}
+
+# Wrong: do not translate for HTTP responses
+raise HTTPException(status_code=404, detail=t("ERROR_APP_NOT_FOUND"))
+```
+
+After adding a new key, also add it with its English text to `frontend/i18n/keys.ts`.
+
+### Backend-Internal Strings
+
+For text the backend renders itself (not returned to the client as an error code), use `t()` from `app/i18n/keys.py`:
+
+```python
+from app.i18n import t
+
+# Simulator responses — rendered as chat message content
+reply = t("SIM_GENERIC_ECHO", message=user_text)
+
+# Webhook-client exceptions — logged, not shown to end users
+raise WebhookError(t("WEBHOOK_TIMEOUT", detail=exc))
+
+# Email subjects
+subject = t("EMAIL_PASSWORD_RESET_SUBJECT")
+```
+
+Key naming conventions and the full list of prefixes are documented in the root `AGENTS.md`.
 
 ## Adding a Backend Feature
 
