@@ -102,6 +102,7 @@ nexo/
 ├── backend/                          # Python FastAPI backend (see backend/AGENTS.md)
 ├── frontend/                         # Next.js React frontend (see frontend/AGENTS.md)
 ├── examples/                         # Webhook example servers (Python, Node); see examples/README.md
+├── incubator/                        # Experimental code, scripts, skills (see incubator/README.md)
 └── docker-compose.yml               # Docker services configuration
 ```
 
@@ -130,6 +131,31 @@ make install-hooks              # One-time: install git pre-commit hooks
 make docker-up-db               # Start PostgreSQL
 make docker-migrate-db          # Run Alembic migrations
 ```
+
+## Incubator - Experimental Code
+
+The `incubator/` folder is for experimental work, ad-hoc scripts, and Claude Code skills that aren't part of the core application.
+
+**Key Differences from Core:**
+
+| Aspect | Core (backend/, frontend/) | Incubator |
+|--------|---------------------------|-----------|
+| **Standards** | TDD required, strict types, full tests | README/docstring required only |
+| **Review** | Code review for all changes | Self-merge with restraint |
+| **Testing** | Must pass CI | Encouraged but optional |
+| **Stability** | Production-ready | Experimental, may break |
+| **Purpose** | Application features | Scripts, tools, experiments |
+
+**What goes in incubator:**
+- Claude Code skills being developed
+- Ad-hoc automation scripts
+- Experimental features and POCs
+- Development tools and helpers
+- Data migration utilities
+
+**Graduation path:** Experimental code that proves valuable can graduate to core after refactoring to meet core standards. See `incubator/README.md` for full guidelines, templates, and graduation criteria.
+
+**Philosophy:** Bias toward action over perfection. Add it, document it, iterate fast. Clean up what doesn't work, graduate what does.
 
 ## Type Safety
 

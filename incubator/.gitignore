@@ -1,0 +1,58 @@
+# Incubator-specific ignores
+
+# Secrets and credentials (NEVER commit these!)
+*.env
+*.key
+*.pem
+*.crt
+*secret*
+*credential*
+*password*
+*.token
+
+# Large data files (keep test data small)
+*.csv
+*.json.gz
+*.parquet
+*.db
+*.sqlite
+*.sql.gz
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments (if someone creates one here)
+venv/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.bak
+
+# However, DO commit:
+# - Example templates (like example-script.py)
+# - README files
+# - Small test fixtures
+# - Skill implementations
