@@ -93,7 +93,7 @@ This project supports multiple AI coding agents via the `AGENTS.md` convention:
 ## Project Structure
 
 ```
-agent-template/
+agent-orchestrator/
 ├── AGENTS.md                         # AI instructions - single source of truth
 ├── CLAUDE.md                         # Pointer → AGENTS.md (for Claude Code)
 ├── .cursor/rules/project.mdc        # Pointer → AGENTS.md (for Cursor)
@@ -245,7 +245,7 @@ The `WIP.md` file tracks work-in-progress changes. Keep it focused on current de
 
 **TypeScript errors after backend changes:** `cd frontend && rm -rf .next && pnpm run dev`
 
-**Database connection issues:** `docker compose down && docker volume rm agent-template_postgres_data && docker compose up -d db && make docker-migrate-db`
+**Database connection issues:** `docker compose down && docker volume rm agent-orchestrator_postgres_data && docker compose up -d db && make docker-migrate-db`
 
 **Dependency conflicts:** `cd backend && uv sync` or `cd frontend && pnpm install`
 

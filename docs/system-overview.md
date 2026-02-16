@@ -328,7 +328,7 @@ A 3-panel layout for viewing conversations grouped by customer:
 ### Monorepo Structure
 
 ```
-agent-template/
+agent-orchestrator/
 ├── backend/              # FastAPI app
 │   ├── app/
 │   │   ├── main.py       # App entrypoint, route registration, CORS

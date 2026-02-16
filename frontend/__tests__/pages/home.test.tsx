@@ -28,7 +28,7 @@ describe("Home Page", () => {
     expect(githubLink).toBeInTheDocument();
     expect(githubLink).toHaveAttribute(
       "href",
-      "https://github.com/markmacmahon/agent-template",
+      "https://github.com/luzia/agent-orchestrator",
     );
   });
 

@@ -35,7 +35,7 @@ export default function Home() {
           >
             <Github className="w-5 h-5" />
             <Link
-              href="https://github.com/markmacmahon/agent-template"
+              href="https://github.com/luzia/agent-orchestrator"
               target="_blank"
               className="hover:underline"
             >
