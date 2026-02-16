@@ -60,6 +60,35 @@ If unclear, assume the simplest interpretation and proceed test-first.
 
 **Avoid:** large rewrites, over-engineering, adding frameworks without need, running precommit repeatedly during development.
 
+## Documentation and Planning
+
+**Discuss before documenting:** Do not write detailed specifications, implementation plans, or architecture documents before discussing requirements with the user.
+
+**When the user mentions a future feature:**
+1. Acknowledge it briefly
+2. Ask clarifying questions if needed
+3. Capture high-level goal in WIP.md (5-10 lines max)
+4. Point to existing vision docs if relevant (e.g., `docs/system-overview.md`)
+5. **Wait for user to say "let's plan this" before writing detailed specs**
+
+**Wrong approach:**
+- User: "We should add team collaboration"
+- Agent: *writes 300 lines of detailed implementation plan in WIP.md*
+
+**Right approach:**
+- User: "We should add team collaboration"
+- Agent: "Got it. Added to WIP.md as 'Next Up' with questions about scope. When you're ready to plan it, let me know and we can discuss requirements."
+
+**Where documentation belongs:**
+- `WIP.md` - Working notes, current status, next steps (keep it light!)
+- `docs/system-overview.md` - Architecture, current implementation, planned evolution
+- `docs/` - Feature documentation, deployment guides, architecture decision records
+- `README.md` - Getting started, quick overview
+- `AGENTS.md` - AI assistant instructions, development workflow
+- Component/module READMEs - Detailed feature docs close to the code
+
+**The rule:** If you haven't discussed it with the user, don't write a detailed spec for it.
+
 ## Writing Conventions
 
 ### Typography: No Em Dashes
@@ -263,9 +292,27 @@ Keys use `SCREAMING_SNAKE_CASE` with a category prefix:
 
 Both frontend and backend can deploy to Vercel, Docker, or any compatible host. Database hosted separately.
 
-## WIP.md
+## WIP.md - Work-in-Progress Tracking
 
-The `WIP.md` file tracks work-in-progress changes. Keep it focused on current development (last 1-2 weeks), not a complete changelog. Prune completed items regularly.
+**Purpose:** WIP.md is a working scratchpad to help pick up where you left off if the session terminates. It is NOT design documentation.
+
+**What belongs in WIP.md:**
+- Recent changes (last 1-2 weeks) - bullet points, not essays
+- Current work status - what's done, what's in progress
+- Next immediate steps - what to work on next
+- Session notes - context needed to resume (blocked on X, waiting for Y)
+- Open questions - things that need user input
+
+**What does NOT belong in WIP.md:**
+- Detailed technical specifications (→ put in `docs/`)
+- Implementation plans not yet discussed with user
+- Architecture deep-dives (→ `docs/system-overview.md`)
+- Complete feature documentation (→ relevant README files)
+- Historical changelog (git history serves this purpose)
+
+**Keep it light:** If a section is more than 10-15 lines, it probably belongs elsewhere or hasn't been discussed yet.
+
+**Prune regularly:** Remove completed items from "Recent Changes" after 2 weeks. Archive important decisions in docs/ or commit messages.
 
 ## Troubleshooting
 
