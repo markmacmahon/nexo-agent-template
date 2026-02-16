@@ -4,6 +4,7 @@ Minimal webhook server (stdlib only). Implements the sync contract:
 POST JSON body with message_received payload -> respond with { "reply": "..." }.
 Port 8080 to avoid conflict with main app (3000, 8000).
 """
+
 import hmac
 import hashlib
 import json
@@ -13,14 +14,17 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 PORT = 8080
 
 
-def verify_signature(secret: str, raw_body: bytes, timestamp: str, signature: str) -> bool:
+def verify_signature(
+    secret: str, raw_body: bytes, timestamp: str, signature: str
+) -> bool:
     if not secret or not timestamp or not signature:
         return True
     try:
         signed = f"{timestamp}.{raw_body.decode()}"
-        expected = "sha256=" + hmac.new(
-            secret.encode(), signed.encode(), hashlib.sha256
-        ).hexdigest()
+        expected = (
+            "sha256="
+            + hmac.new(secret.encode(), signed.encode(), hashlib.sha256).hexdigest()
+        )
         return hmac.compare_digest(signature, expected)
     except Exception:
         return False

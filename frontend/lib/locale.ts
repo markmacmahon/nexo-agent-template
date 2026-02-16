@@ -1,6 +1,6 @@
 /**
  * Locale (language) configuration.
- * ISO 639-1 two-letter codes. Default is always English.
+ * Use two-letter language codes only (ISO 639-1, e.g. en, es, pt). Default is English.
  * Keep in sync with backend schemas.SUPPORTED_LOCALES.
  */
 

@@ -10,7 +10,7 @@ T = TypeVar("T")
 
 IntegrationMode = Literal["simulator", "webhook"]
 
-# ISO 639-1 two-letter language codes. Default is always English.
+# Locale: two-letter language codes only (ISO 639-1, e.g. en, es, pt). Default is English.
 SUPPORTED_LOCALES = ("en", "es", "pt")
 DEFAULT_LOCALE = "en"
 

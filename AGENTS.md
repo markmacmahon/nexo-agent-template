@@ -128,18 +128,24 @@ Never manually write API types -- they're auto-generated. After backend route ch
 
 All user-facing strings are managed through centralised i18n key files. No hardcoded English text in components, routes, or actions.
 
-### Locale / language
+### Strategy: English only for now, hybrid when we add languages
 
-The system is **language-aware** using a **locale** property everywhere. We use **ISO 639-1 two-letter language codes** (e.g. `en`, `es`, `pt`). Default is always **English** (`en`).
+- **Current:** UI is **English only**. Default is **English** everywhere. No locale in the URL (app runs behind login; SEO is not a concern).
+- **Foundation:** Keys live in `frontend/i18n/keys.ts` and `backend/app/i18n/keys.py`; frontend uses `t("KEY")` and `translateError(detail)`. This gives a single source of truth and a clear place to add per-locale content later.
+- **Later (when adding languages):** Use the **hybrid** approach: no `[locale]` segment in paths. Resolve language from **cookie** or **user.locale** (from API); load the appropriate bundle in the root layout. No URL changes, minimal routing impact.
+
+### Locale / language (for future use)
+
+We use **two-letter language codes** only (**ISO 639-1**, e.g. `en`, `es`, `pt`). The system has a **locale** property in the API and DB so we can add translations later without schema churn. Default is always **English** (`en`).
 
 | Where        | Property | Default | Notes |
 |-------------|----------|---------|--------|
-| Database    | `user.locale` | `en` | Stored on the user table; migration adds column with `server_default='en'`. |
-| API         | `UserRead.locale`, `UserUpdate.locale` | `en` | Returned in `/users/me` and user endpoints; PATCH to update. |
-| Backend     | `SUPPORTED_LOCALES`, `DEFAULT_LOCALE` in `schemas.py` | `en` | Validation restricts to supported codes. |
+| Database    | `user.locale` | `en` | Stored on the user table; for future language preference. |
+| API         | `UserRead.locale`, `UserUpdate.locale` | `en` | Returned in `/users/me`; PATCH to update. |
+| Backend     | `SUPPORTED_LOCALES`, `DEFAULT_LOCALE` in `schemas.py` | `en` | Validation; extend when adding languages. |
 | Frontend    | `DEFAULT_LOCALE`, `SUPPORTED_LOCALES` in `lib/locale.ts` | `en` | Use `user.locale` from API when present; fallback to default. |
 
-**Supported locales (no translations yet):** `en` (English), `es` (Spanish), `pt` (Portuguese). Adding new codes is done in both backend `schemas.SUPPORTED_LOCALES` and frontend `lib/locale.ts`. When translations are added, backend `app/i18n/keys.py` and frontend `i18n/keys.ts` will be keyed by locale.
+Only **English** is surfaced in the UI today. When we add translations, backend and frontend key files (or per-locale JSON) will be keyed by locale; resolution will be cookie or `user.locale`, not the URL.
 
 ### Key Files
 
