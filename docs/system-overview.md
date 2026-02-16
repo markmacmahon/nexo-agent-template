@@ -576,7 +576,10 @@ make precommit              # Lint + format + type check
 - **Frontend**: Vercel, Docker, or any Node.js host. Set `NEXT_PUBLIC_API_BASE_URL` and `API_BASE_URL`.
 - **Backend**: Vercel, Docker, or any Python host. Set database URL, secret keys, CORS origins.
 - **Database**: Hosted PostgreSQL service.
-- Backend uses `NullPool` for serverless compatibility (no persistent connections).
+
+**Database Connection Pooling**: The backend supports two pooling strategies via `DATABASE_POOL_CLASS`:
+- `"null"` (default) - No pooling, new connection per request. Best for serverless (Vercel, Lambda).
+- `"queue"` - Connection pool with reuse. Best for traditional servers (Docker, VPS, Kubernetes). Provides 5-10x better database performance but requires persistent process.
 
 ### API Quick Start (curl)
 

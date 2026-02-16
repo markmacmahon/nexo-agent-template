@@ -166,6 +166,7 @@ Set these on the process that runs the FastAPI app:
 | Variable | Required | Description | Default (local) |
 |----------|----------|-------------|-----------------|
 | `DATABASE_URL` | Yes (production) | PostgreSQL connection string. | `postgresql+asyncpg://postgres:password@localhost:5432/nexo_db` |
+| `DATABASE_POOL_CLASS` | No | Connection pooling: `"null"` (serverless) or `"queue"` (traditional servers). | `"null"` |
 | `ACCESS_SECRET_KEY` | Yes (production) | JWT access token secret (min 32 chars). | Dev default; **must** override in production. |
 | `RESET_PASSWORD_SECRET_KEY` | Yes (production) | Password reset token secret. | Dev default; **must** override in production. |
 | `VERIFICATION_SECRET_KEY` | Yes (production) | Email verification token secret. | Dev default; **must** override in production. |
@@ -178,7 +179,9 @@ Generate secure secret keys (run three times for the three keys):
 python3 -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-Optional for production: `MAIL_*` (SMTP), `OPENAPI_OUTPUT_FILE`, `OPENAPI_URL`, webhook header names. See `backend/.env.example` and `backend/app/config.py` for all options.
+**Connection Pooling**: Set `DATABASE_POOL_CLASS=queue` for better performance on traditional servers (Docker, VPS). Defaults to `"null"` for serverless compatibility.
+
+Optional for production: `MAIL_*` (SMTP), `OPENAPI_OUTPUT_FILE`, `OPENAPI_URL`, webhook header names, `DATABASE_POOL_SIZE`, `DATABASE_MAX_OVERFLOW`, `DATABASE_POOL_RECYCLE`. See `backend/.env.example` and `backend/app/config.py` for all options.
 
 ## Development Tips
 
@@ -307,7 +310,7 @@ The dashboard includes a real-time chat UI for testing and monitoring conversati
 ### Testing Your App
 
 1. Create an App in the dashboard
-2. Configure integration mode — use the simulator for testing or set up your webhook
+2. Configure integration mode - use the simulator for testing or set up your webhook
 3. Click "Chat" to open the chat interface and test the conversation flow
 
 ### Subscribers (conversations by customer)
@@ -316,14 +319,14 @@ From the apps table or the app page, use **Subscribers** to view conversations g
 
 ## Documentation
 
-- **[docs/](docs/)** — Project docs. Index: [docs/README.md](docs/README.md). Main reference: [docs/system-overview.md](docs/system-overview.md).
-- **[examples/](examples/)** — Webhook examples (Python stdlib, Node http). Run in separate processes; ports 8080 (Python) and 8081 (Node). See [examples/README.md](examples/README.md). Run `make test-examples` to verify they start and respond correctly.
+- **[docs/](docs/)** - Project docs. Index: [docs/README.md](docs/README.md). Main reference: [docs/system-overview.md](docs/system-overview.md).
+- **[examples/](examples/)** - Webhook examples (Python stdlib, Node http). Run in separate processes; ports 8080 (Python) and 8081 (Node). See [examples/README.md](examples/README.md). Run `make test-examples` to verify they start and respond correctly.
 - **AI assistants and contributors:** [AGENTS.md](AGENTS.md) first (workflow, conventions), then docs/system-overview.md (architecture, API).
 
 ## Next Steps
 
 1. Create an App and test with the built-in simulator
-2. Build your webhook endpoint — see the in-app contract documentation for request/response format
+2. Build your webhook endpoint - see the in-app contract documentation for request/response format
 3. Configure webhook URL and optional HMAC signing in your App settings
 4. Use the Subscribers view to monitor customer conversations
 5. Configure environment variables for production deployment

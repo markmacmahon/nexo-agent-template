@@ -19,6 +19,15 @@ class Settings(BaseSettings):
     )
     EXPIRE_ON_COMMIT: bool = False
 
+    # Connection pooling strategy
+    # "null" - No pooling, new connection per request (serverless: Vercel, Lambda)
+    # "queue" - Connection pool with reuse (traditional servers: Docker, VPS, Kubernetes)
+    DATABASE_POOL_CLASS: str = "null"
+    # QueuePool settings (ignored when using NullPool)
+    DATABASE_POOL_SIZE: int = 5  # Number of connections to maintain
+    DATABASE_MAX_OVERFLOW: int = 10  # Additional connections if pool exhausted
+    DATABASE_POOL_RECYCLE: int = 3600  # Recycle connections after N seconds
+
     # User secrets - DEVELOPMENT DEFAULTS (MUST override in production!)
     ACCESS_SECRET_KEY: str = "dev-access-secret-CHANGE-IN-PRODUCTION-min-32-chars"
     RESET_PASSWORD_SECRET_KEY: str = (
