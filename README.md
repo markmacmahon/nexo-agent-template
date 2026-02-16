@@ -199,21 +199,13 @@ caffeinate -d -u -t 7200
 
 ### Pre-commit Hooks
 
-**First-time setup** (run once per project):
-
-```bash
-make install-hooks
-```
-
-This installs git hooks that automatically run linting, formatting, and type checking before each commit.
-
-**Before committing**, run the checks manually to catch issues early:
+Before committing, run:
 
 ```bash
 make precommit
 ```
 
-This runs all pre-commit checks on your changed files. Fix any issues before committing.
+This runs linting, formatting, and type checking. Dependencies install automatically if needed.
 
 ### Clean Development Environment
 
