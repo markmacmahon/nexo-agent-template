@@ -42,7 +42,7 @@ class TestAppReadMaskSecret:
         assert masked.webhook_secret is None
 
     def test_mask_secret_with_empty_string(self):
-        """mask_secret treats empty string as falsy — no masking needed."""
+        """mask_secret treats empty string as falsy - no masking needed."""
         app = AppRead(
             id="00000000-0000-0000-0000-000000000001",
             user_id="00000000-0000-0000-0000-000000000002",
@@ -125,7 +125,7 @@ class TestBuildWebhookHeaders:
         assert headers1[sig_header] != headers2[sig_header]
 
     def test_empty_secret_string_does_not_sign(self):
-        """Empty string webhook_secret is falsy — no signing."""
+        """Empty string webhook_secret is falsy - no signing."""
         app = self._make_app(webhook_secret="")
         thread = self._make_thread()
 

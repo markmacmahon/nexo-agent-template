@@ -11,7 +11,7 @@ type DisplayMessage = MessageRead & { pending?: boolean; error?: string };
 interface MessageListProps {
   messages: DisplayMessage[];
   streamingText?: string;
-  /** When true, we're loading messages for the selected thread — don't show the greeting placeholder. */
+  /** When true, we're loading messages for the selected thread - don't show the greeting placeholder. */
   messagesLoading?: boolean;
   onRetryPending?: (messageId: string) => void;
 }
@@ -34,7 +34,7 @@ export function MessageList({
         className="absolute inset-0 touch-pan-y overflow-y-auto"
       >
         <div className="mx-auto flex min-w-0 max-w-4xl flex-col gap-4 px-2 py-4 md:gap-6 md:px-4">
-          {/* Greeting / empty state — only when we have no messages and we're not loading */}
+          {/* Greeting / empty state - only when we have no messages and we're not loading */}
           {showGreeting && (
             <div
               data-testid="chat-greeting"

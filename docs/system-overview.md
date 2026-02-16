@@ -1,10 +1,231 @@
 # System Overview
 
-This document provides a comprehensive overview of the Partner Integration Platform — a full-stack system where partners build conversational agents that plug into existing chatbots. It is intended as a reference for collaborators joining the project.
+This document provides a comprehensive technical overview of the Agent Template - an orchestration layer for modular conversational agents.
+
+## Architecture Philosophy: Decoupled State and Execution
+
+Traditional conversational systems tightly couple state management with business logic. This platform takes a different approach by **decoupling conversational state from agent execution**:
+
+**Conversational State** (managed by platform):
+- User preferences and profiles
+- Conversation history and threading
+- Cross-session memory
+- Agent interaction context
+
+**Agent Execution** (external webhooks or internal services):
+- Domain-specific logic
+- LLM integration
+- Transactional workflows
+- Specialized Q&A
+
+This separation enables:
+- **Modular agent integration** - Add/remove agents without core changes
+- **Shared state across agents** - Agents access common user data and memory
+- **Unified user experience** - Single interface across different agent capabilities
+- **Fine-grained access control** - Configure what state each agent receives
+
+---
+
+## Current Implementation: Agent Routing Runtime
+
+Today, the platform provides a **stateless routing layer**:
+
+```
+┌────────────────────────────────────────────────┐
+│            Orchestration Runtime               │
+│                                                │
+│  ┌──────────────────────────────────────────┐ │
+│  │         Message Router                    │ │
+│  │    (Routes to appropriate agent)          │ │
+│  └──────────────────────────────────────────┘ │
+│                    │                           │
+│        ┌───────────┼───────────┐              │
+│        ↓           ↓           ↓              │
+│   Internal    Simulator    External           │
+│   Logic       (testing)    Agents             │
+│                            (webhooks)          │
+│                                                │
+│  ┌──────────────────────────────────────────┐ │
+│  │    Conversation Storage & Threading       │ │
+│  └──────────────────────────────────────────┘ │
+└────────────────────────────────────────────────┘
+              │
+              ↓
+    ┌──────────────────────┐
+    │  Integration Layer   │
+    │  • Web UI            │
+    │  • Chat APIs         │
+    │  • External Systems  │
+    └──────────────────────┘
+```
+
+**Current capabilities:**
+- HTTP webhook integration with HMAC-SHA256 signing
+- SSE streaming for real-time token-by-token responses
+- Threaded conversation persistence
+- Message routing and orchestration
+- Dashboard for agent management and monitoring
+- Type-safe APIs via auto-generated OpenAPI clients
+
+---
+
+## Planned Evolution: Stateful Agent Orchestration
+
+Evolving toward a **shared-state coordination layer**:
+
+```
+┌────────────────────────────────────────────────┐
+│            Orchestration Runtime               │
+│                                                │
+│  ┌──────────────────────────────────────────┐ │
+│  │         Shared State Layer               │ │
+│  │  • User preferences & profiles            │ │
+│  │  • Cross-agent memory                     │ │
+│  │  • Conversation context                   │ │
+│  │  • Agent-to-agent handoff state           │ │
+│  └──────────────────────────────────────────┘ │
+│                    ↕                           │
+│  ┌──────────────────────────────────────────┐ │
+│  │    Agent Orchestrator                     │ │
+│  │  • State injection                        │ │
+│  │  • Multi-agent coordination               │ │
+│  │  • Context-aware routing                  │ │
+│  └──────────────────────────────────────────┘ │
+│                    │                           │
+│        ┌───────────┼───────────┐              │
+│        ↓           ↓           ↓              │
+│   Agent A      Agent B      Agent C           │
+│   (booking)    (support)    (LLM)             │
+│   ↕ state      ↕ state      ↕ state          │
+│   read/write   read/write   read/write        │
+│                                                │
+└────────────────────────────────────────────────┘
+              │
+              ↓
+    ┌──────────────────────┐
+    │  Integration Layer   │
+    │  • Chatbots          │
+    │  • Workflows         │
+    │  • Custom UIs        │
+    └──────────────────────┘
+```
+
+**Planned capabilities:**
+- Centralized state store accessible to all agents
+- Runtime state injection into agent webhook payloads
+- Agent-to-agent handoff with context preservation
+- Dashboard UI for configuring state access per agent
+- Write-back APIs for agents to update shared state
+- Privacy controls and user consent management
+
+---
+
+## Agent Communication Model
+
+### Current: Message Passing
+
+Agents receive messages and conversation history:
+
+```json
+POST /your-agent-endpoint
+{
+  "message": {
+    "content": "Book a table for 2 tomorrow",
+    "role": "user"
+  },
+  "conversation": {
+    "thread_id": "thread_123",
+    "history": [
+      {"role": "user", "content": "Hi"},
+      {"role": "assistant", "content": "Hello! How can I help?"}
+    ]
+  },
+  "metadata": {
+    "app_id": "booking_agent",
+    "user_id": "user_456"
+  }
+}
+```
+
+Response:
+```json
+{
+  "reply": "I'd be happy to help! What restaurant?"
+}
+```
+
+### Planned: Stateful Context Injection
+
+Agents receive enriched payloads with shared state:
+
+```json
+POST /your-agent-endpoint
+{
+  "message": {
+    "content": "Book a table for 2 tomorrow"
+  },
+  "state": {
+    "user_profile": {
+      "name": "Alice Chen",
+      "preferences": {
+        "dietary_restrictions": ["vegetarian"],
+        "preferred_cuisine": ["italian", "japanese"],
+        "default_party_size": 2
+      }
+    },
+    "shared_memory": {
+      "favorite_restaurants": [
+        {"name": "Bella Vista", "cuisine": "italian"},
+        {"name": "Sakura", "cuisine": "japanese"}
+      ],
+      "last_booking": {
+        "restaurant": "Bella Vista",
+        "date": "2024-02-01",
+        "party_size": 2
+      }
+    },
+    "conversation_context": {
+      "recent_topics": ["restaurant booking", "italian food"],
+      "pending_actions": []
+    }
+  },
+  "agent_config": {
+    "state_access": ["user_profile", "shared_memory"],
+    "can_write": ["shared_memory", "conversation_context"]
+  }
+}
+```
+
+Response with state updates:
+```json
+{
+  "reply": "Based on your preferences, would you like Bella Vista (Italian) or Sakura (Japanese)?",
+  "state_updates": {
+    "shared_memory": {
+      "pending_booking": {
+        "date": "2024-03-15",
+        "party_size": 2,
+        "options": ["Bella Vista", "Sakura"]
+      }
+    },
+    "conversation_context": {
+      "pending_actions": ["confirm_restaurant_choice"]
+    }
+  }
+}
+```
+
+The platform persists state updates and makes them available to subsequent agent interactions.
+
+---
 
 ## What This System Does
 
-The platform lets **partners** (business owners, developers) create **Apps** — each App is the partner's integration point into the chatbot ecosystem. Through their App, partners handle customer **Q&A** (answering questions within their domain) or **agent-to-agent workflows** (transactional flows like booking, ordering, or support) as a skill within the host conversation. **Subscribers** (end customers) interact through threaded conversations. Messages flow through a configurable integration layer that can use a built-in simulator for testing or forward to an external webhook for production AI/LLM processing. The chat interface supports real-time streaming via Server-Sent Events (SSE).
+The platform enables developers to build **contextually-aware conversational agents** that integrate without modifying core infrastructure.
+
+**Apps** (agents) are webhook endpoints that receive messages and return responses. In the current implementation, Apps receive messages with basic conversation context (thread history). In the planned stateful runtime, Apps will receive enriched payloads with user preferences, cross-session memory, and configurable state access.
+
+**Subscribers** (end customers) interact through threaded conversations. The runtime handles message routing, persistence, and (planned) state management.
 
 ---
 
@@ -22,13 +243,13 @@ These are the features available through the web UI at `http://localhost:3000`.
 | Password reset | Token-validated new password form |
 | Logout | Token cleanup and redirect |
 
-### Partner Dashboard
+### Dashboard
 
 The dashboard is the main workspace after login. It has a fixed left sidebar and breadcrumb navigation.
 
-- **Landing page** — Welcome copy with a CTA to the Apps list.
-- **Apps table** — Paginated list of all apps owned by the user. Columns: name (links to app detail page), description, and actions (Chat, Subscribers, Edit, Delete via dropdown).
-- **Page size selector** — 10, 20, 50, or 100 items per page.
+- **Landing page** - Welcome copy with a CTA to the Apps list.
+- **Apps table** - Paginated list of all apps owned by the user. Columns: name (links to app detail page), description, and actions (Chat, Subscribers, Edit, Delete via dropdown).
+- **Page size selector** - 10, 20, 50, or 100 items per page.
 
 ### App Management
 
@@ -43,46 +264,46 @@ The dashboard is the main workspace after login. It has a fixed left sidebar and
 
 Each app is configured with one of two integration modes, which control how assistant responses are generated:
 
-**Simulator** (default) — No external dependencies. Generates deterministic canned responses for testing.
+**Simulator** (default) - No external dependencies. Generates deterministic canned responses for testing.
 - Scenario presets (customer support triage, live match commentary, restaurant reservation, survey) are selectable in the dashboard. Each preset streams canned responses chunk-by-chunk with timed delays so teams can demo long-running workflows end-to-end.
 - Optional `[Simulated]` disclaimer prefix.
 
-**Webhook** — Forwards user messages to an external URL and returns the response.
+**Webhook** - Forwards user messages to an external URL and returns the response.
 - Sync mode: POST to webhook, expect `{ "reply": "..." }` within timeout.
 - Supports HMAC-SHA256 request signing for authenticity verification.
 - Supports SSE streaming responses from the webhook (proxied to the user).
 - Webhook test UI: send a sample message, view status code, latency, response, and signature status.
 - In-app documentation with request/response contract, code examples (Node.js Express, Python FastAPI), and signing verification guides.
-- **Partner API**: When the app has a webhook secret set, the edit page shows a **Partner API** section with base URL and App ID, and documents **App ID + Secret** auth (headers `X-App-Id` and `X-App-Secret`) so partners can call the API (list subscribers, list threads, post messages) without logging in. If no secret is set, the doc shows the JWT (login) flow instead.
+- **Partner API**: When the app has a webhook secret set, the edit page shows a **Partner API** section with base URL and App ID, and documents **App ID + Secret** auth (headers `X-App-Id` and `X-App-Secret`) so developers can call the API (list subscribers, list threads, post messages) without logging in. If no secret is set, the doc shows the JWT (login) flow instead.
 
 ### Chat Interface
 
 A real-time conversational UI accessible from any app. Dashboard routes: thread list at `apps/[app_id]/threads` (or via Chat from the app page), conversation at `apps/[app_id]/threads/[thread_id]`.
 
-- **Thread-based** — Each conversation is a thread with sequential messages.
-- **Auto-greeting** — A greeting message from the assistant is created when a new thread starts.
-- **SSE streaming** — Assistant responses stream token-by-token with an animated cursor.
-- **Collapsible sidebar** — Lists all threads for the app; toggle with the menu button.
-- **New conversation** — Create threads via the "+" button.
-- **Editable titles** — Rename threads inline.
-- **Auto-resize input** — Message input grows from 44px to 200px.
-- **Smart scrolling** — Auto-scrolls to bottom; scroll-to-bottom button when scrolled up.
-- **Keyboard shortcuts** — Enter sends, Shift+Enter adds newline.
-- **Mobile responsive** — Overlay sidebar on small screens.
+- **Thread-based** - Each conversation is a thread with sequential messages.
+- **Auto-greeting** - A greeting message from the assistant is created when a new thread starts.
+- **SSE streaming** - Assistant responses stream token-by-token with an animated cursor.
+- **Collapsible sidebar** - Lists all threads for the app; toggle with the menu button.
+- **New conversation** - Create threads via the "+" button.
+- **Editable titles** - Rename threads inline.
+- **Auto-resize input** - Message input grows from 44px to 200px.
+- **Smart scrolling** - Auto-scrolls to bottom; scroll-to-bottom button when scrolled up.
+- **Keyboard shortcuts** - Enter sends, Shift+Enter adds newline.
+- **Mobile responsive** - Overlay sidebar on small screens.
 
 ### Subscribers (Customer Conversations)
 
 A 3-panel layout for viewing conversations grouped by customer:
 
-- **Left panel** — Subscriber list with search (by customer ID or display name).
-- **Middle panel** — Threads for the selected subscriber.
-- **Right panel** — Conversation view for the selected thread.
+- **Left panel** - Subscriber list with search (by customer ID or display name).
+- **Middle panel** - Threads for the selected subscriber.
+- **Right panel** - Conversation view for the selected thread.
 - Accessible from the apps table (Users icon) or the app detail page.
 
 ### Internationalisation (i18n)
 
 - All UI strings are centralised in `frontend/i18n/keys.ts`.
-- Supported locales: English (`en`), Spanish (`es`), Portuguese (`pt`). Translations are not yet implemented — the infrastructure is in place.
+- Supported locales: English (`en`), Spanish (`es`), Portuguese (`pt`). Translations are not yet implemented - the infrastructure is in place.
 - Backend HTTP errors return raw i18n key strings; the frontend `translateError()` maps them to user-facing text.
 - User locale is stored on the user record and exposed via the API.
 
@@ -147,7 +368,7 @@ agent-template/
 | **Subscriber** | id, app_id, customer_id, display_name, metadata_json, last_seen_at | Belongs to App; has many Threads |
 
 Key constraints:
-- Message `(thread_id, seq)` is unique — enforced at DB level.
+- Message `(thread_id, seq)` is unique - enforced at DB level.
 - Subscriber `(app_id, customer_id)` is unique.
 - Cascade deletes: App -> Threads -> Messages; App -> Subscribers.
 - Indexes: `(app_id, created_at)` and `(app_id, customer_id)` on threads; `(thread_id, seq)` on messages; `(app_id, last_seen_at)` and `(app_id, last_message_at)` on subscribers.
@@ -168,9 +389,9 @@ This guarantees no duplicate seq numbers under concurrent writes, deterministic 
 
 - **Dashboard and app-scoped routes** (e.g. `/apps/{id}`, `/threads/{id}`): JWT required; ownership enforced via `app.user_id == current_user.id`.
 - **Partner API routes** (under `/apps/{app_id}/...`): **Subscribers** (list, get, list threads), **Threads** (create, list), and **Messages** (list, create user, create assistant) accept **either**:
-  - **JWT** — `Authorization: Bearer <token>` (same as dashboard), or
-  - **App ID + Secret** — headers `X-App-Id` (app UUID) and `X-App-Secret` (the app’s webhook secret). The app must have a webhook secret set. Validated with constant-time comparison.
-- So partners can integrate without storing user credentials: they use the App ID (shown on the app edit page) and the webhook secret on every request.
+  - **JWT** - `Authorization: Bearer <token>` (same as dashboard), or
+  - **App ID + Secret** - headers `X-App-Id` (app UUID) and `X-App-Secret` (the app’s webhook secret). The app must have a webhook secret set. Validated with constant-time comparison.
+- So developers can integrate without storing user credentials: they use the App ID (shown on the app edit page) and the webhook secret on every request.
 
 ### API Endpoints
 
@@ -215,9 +436,9 @@ This guarantees no duplicate seq numbers under concurrent writes, deterministic 
 | GET | `/apps/{app_id}/threads/{thread_id}/messages` | List messages (cursor pagination via `before_seq`) |
 | GET | `/messages/{id}` | Get single message |
 
-**Threads — request/response:** Create thread `POST /apps/{app_id}/threads` accepts `{ "title": "optional", "customer_id": "optional" }` and returns the thread object (id, app_id, title, status, customer_id, created_at, updated_at). List threads supports query params `customer_id`, `status`, and cursor pagination (`limit`, `cursor`); response `{ "items": [...], "next_cursor": "..." }`.
+**Threads - request/response:** Create thread `POST /apps/{app_id}/threads` accepts `{ "title": "optional", "customer_id": "optional" }` and returns the thread object (id, app_id, title, status, customer_id, created_at, updated_at). List threads supports query params `customer_id`, `status`, and cursor pagination (`limit`, `cursor`); response `{ "items": [...], "next_cursor": "..." }`.
 
-**Messages — request/response:** Send user message `POST .../messages` body `{ "content": "text", "content_json": {} }`; role is set to `user`. Send assistant reply `POST .../threads/{thread_id}/messages/assistant` same body; role is set to `assistant`. List messages `GET .../messages` accepts `before_seq` (cursor) and `limit` (default 50, max 200); returns an array of message objects ordered by `seq` ascending (oldest first). Each message has id, thread_id, seq, role, content, content_json, created_at.
+**Messages - request/response:** Send user message `POST .../messages` body `{ "content": "text", "content_json": {} }`; role is set to `user`. Send assistant reply `POST .../threads/{thread_id}/messages/assistant` same body; role is set to `assistant`. List messages `GET .../messages` accepts `before_seq` (cursor) and `limit` (default 50, max 200); returns an array of message objects ordered by `seq` ascending (oldest first). Each message has id, thread_id, seq, role, content, content_json, created_at.
 
 #### Chat Execution
 
@@ -278,7 +499,7 @@ File watchers (`backend/watcher.py`, `frontend/watcher.js`) auto-regenerate on c
 
 ### Security
 
-- JWT authentication on protected endpoints; **Partner API** routes also accept **X-App-Id + X-App-Secret** when the app has a webhook secret (no login required for partners).
+- JWT authentication on protected endpoints; **Partner API** routes also accept **X-App-Id + X-App-Secret** when the app has a webhook secret (no login required for developers).
 - App ownership enforced: users can only access their own apps, threads, messages, and subscribers; app-secret auth grants access only to that app’s resources.
 - Webhook URL validation: blocks `localhost`, `127.0.0.1`, private networks (`10.x.x.x`, `192.168.x.x`, `169.254.x.x`).
 - HMAC-SHA256 webhook signing for request authenticity.

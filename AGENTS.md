@@ -60,6 +60,21 @@ If unclear, assume the simplest interpretation and proceed test-first.
 
 **Avoid:** large rewrites, over-engineering, adding frameworks without need, running precommit repeatedly during development.
 
+## Writing Conventions
+
+### Typography: No Em Dashes
+
+**Use hyphens (-), not em dashes (—), in all documentation, code comments, and text content.**
+
+Em dashes create inconsistency and can cause encoding issues. Use:
+- **Hyphen (-)** for ranges, pauses, and separators
+- **Two hyphens (--)** if you need stronger separation
+
+**Wrong:** `User preferences — stored centrally`
+**Right:** `User preferences - stored centrally`
+
+**Cleanup tool:** If em dashes slip in, use the `/remove-em-dashes` skill (requires Claude Code restart after skill creation). This skill scans the codebase and replaces all em dashes with hyphens.
+
 ## AI Agent Configuration
 
 This project supports multiple AI coding agents via the `AGENTS.md` convention:
@@ -161,7 +176,7 @@ Only **English** is surfaced in the UI today. When we add translations, backend 
 Backend HTTP responses return **raw i18n keys** (not English text) for all errors and action messages:
 
 ```python
-# Backend route — returns the KEY, not a translated string
+# Backend route - returns the KEY, not a translated string
 raise HTTPException(status_code=404, detail="ERROR_APP_NOT_FOUND")
 return {"message": "ACTION_APP_DELETED"}
 ```
@@ -178,10 +193,10 @@ This is the same pattern fastapi-users already uses (e.g. `"LOGIN_BAD_CREDENTIAL
 
 ### Rules for Adding New Strings
 
-1. **Frontend UI text** — add key to `frontend/i18n/keys.ts`, use `t("KEY")` in components/actions.
-2. **Backend HTTP errors/messages** — return the raw key string from the route; add the key + English text to `frontend/i18n/keys.ts`.
-3. **Backend-internal text** (simulator, webhook-client, email) — add to `backend/app/i18n/keys.py`, use `t("KEY")`.
-4. **Validation messages** (Zod schemas) — use `t("FORM_VALIDATION_*")` in `lib/definitions.ts`.
+1. **Frontend UI text** - add key to `frontend/i18n/keys.ts`, use `t("KEY")` in components/actions.
+2. **Backend HTTP errors/messages** - return the raw key string from the route; add the key + English text to `frontend/i18n/keys.ts`.
+3. **Backend-internal text** (simulator, webhook-client, email) - add to `backend/app/i18n/keys.py`, use `t("KEY")`.
+4. **Validation messages** (Zod schemas) - use `t("FORM_VALIDATION_*")` in `lib/definitions.ts`.
 
 ### Naming Conventions
 
@@ -240,8 +255,8 @@ E2E tests run full user flows in a browser. **You do not need to start the backe
 
 **Prerequisites (from project root):**
 
-1. **Development database** — `docker compose up -d db` (backend started by Playwright uses the dev DB).
-2. **Test user** — A user `tester1@example.com` / `Password#99` with at least one app (for chat-flow specs).
+1. **Development database** - `docker compose up -d db` (backend started by Playwright uses the dev DB).
+2. **Test user** - A user `tester1@example.com` / `Password#99` with at least one app (for chat-flow specs).
 
 **Run E2E:**
 

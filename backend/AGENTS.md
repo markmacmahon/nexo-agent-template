@@ -121,13 +121,13 @@ make docker-db-schema migration_name="add users table"
 - Test DB: `agents_test_db` on port 5433
 - Modify models in `app/models.py`, then generate a migration. Never edit migration files by hand unless necessary.
 
-## Internationalisation (i18n) — Error Keys
+## Internationalisation (i18n) - Error Keys
 
 The backend returns **raw i18n key strings** for all client-facing errors and messages. The frontend owns the English translations.
 
 ### HTTP Errors and Success Messages
 
-Return the key directly — do **not** call `t()`:
+Return the key directly - do **not** call `t()`:
 
 ```python
 # Correct: raw key string
@@ -147,10 +147,10 @@ For text the backend renders itself (not returned to the client as an error code
 ```python
 from app.i18n import t
 
-# Simulator responses — rendered as chat message content
+# Simulator responses - rendered as chat message content
 reply = t("SIM_GENERIC_ECHO", message=user_text)
 
-# Webhook-client exceptions — logged, not shown to end users
+# Webhook-client exceptions - logged, not shown to end users
 raise WebhookError(t("WEBHOOK_TIMEOUT", detail=exc))
 
 # Email subjects

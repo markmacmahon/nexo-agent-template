@@ -16,9 +16,9 @@
  */
 const messages = {
   // ── Home / landing ──────────────────────────────────────────────
-  HOME_TITLE: "Partner Integration Platform",
+  HOME_TITLE: "Agent Template",
   HOME_SUBTITLE:
-    "Build conversational agents that plug into existing chatbots. Handle customer Q&A or complete workflows like booking, ordering, and support.",
+    "Build conversational agents that integrate seamlessly with existing chatbot ecosystems. Create modular integrations that handle specialized tasks from simple Q&A to complex transactional workflows.",
   HOME_CTA: "Go to Dashboard",
   HOME_GITHUB: "View on GitHub",
 
@@ -84,9 +84,9 @@ const messages = {
 
   // ── Dashboard (landing when logged in) ───────────────────────────
   NAV_WELCOME: "Welcome to your Dashboard",
-  DASHBOARD_TITLE: "Partner Dashboard",
+  DASHBOARD_TITLE: "Dashboard",
   DASHBOARD_SUBTITLE:
-    "Create and manage your Apps. Each App is your integration into the chatbot ecosystem — configure webhooks, test with the simulator, and monitor customer conversations.",
+    "Create and manage your Apps. Configure which context and user data each App receives to deliver personalized experiences. Test with the simulator, monitor conversations, and manage integrations.",
   DASHBOARD_CTA: "Go to Apps",
 
   // ── Error pages ─────────────────────────────────────────────────
@@ -213,7 +213,7 @@ const messages = {
   WEBHOOK_SECRET_SHOW: "Show key",
   WEBHOOK_SECRET_HIDE: "Hide key",
   WEBHOOK_SECRET_COPY_WARNING:
-    "Copy this secret now — it will be masked after saving.",
+    "Copy this secret now - it will be masked after saving.",
   WEBHOOK_TEST_HEADING: "Test Webhook",
   WEBHOOK_TEST_SAMPLE_LABEL: "Sample message",
   WEBHOOK_TEST_BUTTON: "Test webhook",
@@ -232,7 +232,7 @@ const messages = {
   PARTNER_API_INTRO:
     "Use your account (JWT) to list subscribers, list their threads, and post messages to a thread. All requests need the token from login.",
   PARTNER_API_INTRO_WITH_SECRET:
-    "Use the App ID and webhook secret below — no login required. Send X-App-Id and X-App-Secret on every request.",
+    "Use the App ID and webhook secret below - no login required. Send X-App-Id and X-App-Secret on every request.",
   PARTNER_API_BASE_URL: "API base URL",
   PARTNER_API_APP_ID: "App ID",
   PARTNER_API_APP_ID_FOR_SECRET: "App ID (use with webhook secret)",
@@ -324,7 +324,7 @@ export type MessageKey = keyof typeof messages;
 /**
  * Return the English string for the given key.
  *
- * Type-safe at compile time — a typo in the key is a TS error.
+ * Type-safe at compile time - a typo in the key is a TS error.
  * When we add translations (es, pt), this will accept an optional `locale`
  * and use resolveLocale(user?.locale) from @/lib/locale. Default remains en.
  */

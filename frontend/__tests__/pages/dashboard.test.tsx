@@ -7,7 +7,7 @@ import DashboardPage from "@/app/dashboard/page";
 describe("Dashboard Page", () => {
   it("renders title and CTA to apps", () => {
     render(<DashboardPage />);
-    expect(screen.getByText("Partner Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("Dashboard")).toBeInTheDocument();
     const cta = screen.getByRole("link", { name: /go to apps/i });
     expect(cta).toBeInTheDocument();
     expect(cta).toHaveAttribute("href", "/dashboard/apps");

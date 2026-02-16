@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Stable** — Dedicated app page, Partner Dashboard landing, apps table with Chat/Subscribers links and actions dropdown.
+**Stable** - Dedicated app page, Dashboard landing, apps table with Chat/Subscribers links and actions dropdown.
 
 ## Recent Changes
 
@@ -22,7 +22,7 @@
 ### 2026-02-15 - Dashboard and apps table
 
 - **Dedicated app page** at `/dashboard/apps/[id]` (hub: Chat, Subscribers, Edit App). App name in list links to app page; Edit via dropdown or app page.
-- **Partner Dashboard** landing (title, agent apps copy, Go to Apps CTA). Sidebar retained.
+- **Dashboard** landing (title, agent apps copy, Go to Apps CTA). Sidebar retained.
 - **Apps table:** Chat and Subscribers as icon links; actions dropdown (Edit App, Delete). App name link with hover underline/primary.
 
 ### Earlier - Subscribers and tests

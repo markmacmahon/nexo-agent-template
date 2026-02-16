@@ -61,7 +61,7 @@ async def test_client(engine, db_session):
         finally:
             await db_session.close()
 
-    # Session factory override — used by streaming endpoints that create
+    # Session factory override - used by streaming endpoints that create
     # their own sessions (e.g. SSE generator persist calls).
     test_session_factory = async_sessionmaker(
         engine, class_=AsyncSession, expire_on_commit=False

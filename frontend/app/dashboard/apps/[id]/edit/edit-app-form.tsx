@@ -562,7 +562,7 @@ export function EditAppForm({ app }: EditAppFormProps) {
                   <p className="text-green-700">
                     Reply:{" "}
                     {(testResult.response_json as Record<string, string>)
-                      ?.reply ?? "—"}
+                      ?.reply ?? "-"}
                   </p>
                 </div>
               ) : (
@@ -594,7 +594,7 @@ export function EditAppForm({ app }: EditAppFormProps) {
                   {String(
                     testResult.response_text ??
                       JSON.stringify(testResult.response_json, null, 2) ??
-                      "—",
+                      "-",
                   )}
                 </pre>
               </details>
@@ -651,7 +651,7 @@ export function EditAppForm({ app }: EditAppFormProps) {
                   text/event-stream
                 </code>{" "}
                 response instead of JSON. This enables real-time token streaming
-                to end users — useful when your backend calls an LLM and wants
+                to end users - useful when your backend calls an LLM and wants
                 to stream tokens as they are generated.
               </p>
 
@@ -695,11 +695,11 @@ export function EditAppForm({ app }: EditAppFormProps) {
                 </pre>
                 <ul className="mt-2 list-disc list-inside space-y-1">
                   <li>
-                    <code className="font-mono text-xs">delta</code> — a text
+                    <code className="font-mono text-xs">delta</code> - a text
                     chunk (streamed to the user)
                   </li>
                   <li>
-                    <code className="font-mono text-xs">done</code> — signals
+                    <code className="font-mono text-xs">done</code> - signals
                     end of stream
                   </li>
                 </ul>
@@ -707,7 +707,7 @@ export function EditAppForm({ app }: EditAppFormProps) {
 
               <div>
                 <h3 className="text-sm font-medium text-foreground">
-                  Node.js (Express) — streaming
+                  Node.js (Express) - streaming
                 </h3>
                 <div className="relative">
                   <button
@@ -725,7 +725,7 @@ export function EditAppForm({ app }: EditAppFormProps) {
 
               <div>
                 <h3 className="text-sm font-medium text-foreground">
-                  Python (FastAPI) — streaming
+                  Python (FastAPI) - streaming
                 </h3>
                 <div className="relative">
                   <button

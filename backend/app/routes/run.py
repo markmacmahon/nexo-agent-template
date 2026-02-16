@@ -160,7 +160,7 @@ async def run_stream(
                 yield _sse_event("meta", json.dumps(data))
 
             elif event_type == "raw":
-                # Proxied SSE bytes from partner webhook — pass through as-is
+                # Proxied SSE bytes from partner webhook - pass through as-is
                 if isinstance(data, bytes):
                     yield data.decode("utf-8", errors="replace")
                 else:

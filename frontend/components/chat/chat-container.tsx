@@ -319,14 +319,14 @@ export function ChatContainer({
           )}
         </header>
 
-        {/* Messages — fills remaining space */}
+        {/* Messages - fills remaining space */}
         <MessageList
           messages={messages}
           streamingText={streamingText}
           messagesLoading={messagesLoading}
         />
 
-        {/* Input — pinned to bottom */}
+        {/* Input - pinned to bottom */}
         <MessageInput
           onSendMessage={handleSendMessage}
           disabled={isStreaming}

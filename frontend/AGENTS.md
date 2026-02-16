@@ -75,7 +75,7 @@ make precommit
 
 ### E2E Testing
 
-E2E tests use Playwright to test full user flows (including login, chat, SSE streaming). **The frontend and backend servers are started automatically** as part of the test run — you do not need to run `make start-backend` or `make start-frontend` first. Playwright’s `webServer` config in `playwright.config.ts` starts both; when not in CI, it will reuse already-running servers on ports 8000 and 3000 if present.
+E2E tests use Playwright to test full user flows (including login, chat, SSE streaming). **The frontend and backend servers are started automatically** as part of the test run - you do not need to run `make start-backend` or `make start-frontend` first. Playwright’s `webServer` config in `playwright.config.ts` starts both; when not in CI, it will reuse already-running servers on ports 8000 and 3000 if present.
 
 **Prerequisites:**
 
@@ -207,7 +207,7 @@ The backend returns raw i18n keys (e.g. `"ERROR_APP_NOT_FOUND"`) in `error.detai
 ```typescript
 import { translateError } from "@/i18n/keys";
 
-// In server actions — when extracting error.detail
+// In server actions - when extracting error.detail
 const detail = String(error.detail);
 return { error: translateError(detail) };
 ```

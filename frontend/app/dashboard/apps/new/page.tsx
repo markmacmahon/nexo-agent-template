@@ -216,7 +216,7 @@ export default function CreateAppPage() {
                 {t("WEBHOOK_URL_CORS_NOTE")}
               </p>
 
-              {/* App ID & Secret (optional) — saved when app is created */}
+              {/* App ID & Secret (optional) - saved when app is created */}
               <div className="space-y-2 border-t border-border pt-4">
                 <h3 className="text-base font-semibold">
                   {t("PARTNER_API_CREDENTIALS_HEADING_OPTIONAL")}

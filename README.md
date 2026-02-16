@@ -1,14 +1,28 @@
-# Partner Integration Platform
+# Agent Template
 
-A full-stack platform where partners build conversational agents that plug into existing chatbots. Partners create **Apps** — each App is an integration point into the chatbot ecosystem, handling customer Q&A or complete transactional workflows (booking, ordering, support) as a skill within the host conversation.
+**An orchestration layer for modular conversational agents.**
+
+Build AI agents that share state, compose seamlessly, and integrate anywhere - chatbots, workflows, or standalone apps. Agents connect via webhooks and receive shared context (user preferences, conversation memory) at runtime.
+
+## Vision
+
+Most conversational systems tightly couple state with execution. This runtime **decouples** them:
+
+- **Shared state layer** - User preferences, memory, and context managed centrally
+- **Agent orchestration** - Route between multiple agents while preserving context
+- **Modular composition** - Add agents without changing infrastructure
+- **Flexible deployment** - Standalone service or embedded in existing systems
+
+**Today:** Foundation runtime with webhook routing, SSE streaming, and conversation threading.
+**Tomorrow:** Stateful orchestration with centralized state store, runtime context injection, and agent-to-agent handoff.
 
 ## Overview
 
-The **Partner Dashboard** is where partners create, configure, test, and monitor their Apps. Each App connects to the chatbot via a webhook, receiving customer messages and returning responses — either simple answers or multi-turn agent flows. A built-in simulator lets partners test their integration without deploying a backend.
+The **Dashboard** is where you create, configure, test, and monitor your agents. Each agent connects via webhook, receiving customer messages and returning responses - either simple answers or multi-turn flows. A built-in simulator lets you test integrations without deploying a backend.
 
-### Features
+### Current Capabilities
 
-- **Partner Dashboard** for creating and managing Apps, viewing subscribers, and monitoring conversations
+- **Dashboard** for creating and managing agents, viewing subscribers, and monitoring conversations
 - **Webhook integration** with HMAC-SHA256 signing, SSE streaming, and in-app contract documentation
 - **Built-in simulator** for testing conversational flows without an external backend
 - **Real-time chat** with SSE token streaming, threaded conversations, and subscriber tracking
